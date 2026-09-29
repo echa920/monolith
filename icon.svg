@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151A23"/>
+      <stop offset="1" stop-color="#06070A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.18" r="0.8">
+      <stop offset="0" stop-color="#C8FF00" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#C8FF00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"    stop-color="#8FB300"/>
+      <stop offset="0.45" stop-color="#EAFF8F"/>
+      <stop offset="0.55" stop-color="#CFFF2E"/>
+      <stop offset="1"    stop-color="#7F9F00"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D2DBE8"/>
+      <stop offset="0.5" stop-color="#93A0B6"/>
+      <stop offset="1" stop-color="#5A6579"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4459"/>
+      <stop offset="1" stop-color="#202734"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+
+  <!-- Crossed in an X on purpose. A vertical shaft with two round shapes at its
+       base reads as something else entirely; a saltire cannot. -->
+
+  <!-- ===== the dumbbell, behind, running upper-left to lower-right ===== -->
+  <g transform="rotate(45 256 256)">
+    <rect x="140" y="241" width="232" height="30" rx="15" fill="url(#steel)"/>
+    <rect x="140" y="241" width="232" height="10" rx="5" fill="#E8EFF9" opacity="0.5"/>
+    <!-- plates: outer then inner, both ends -->
+    <rect x="92"  y="196" width="40" height="120" rx="14" fill="url(#steel)"/>
+    <rect x="138" y="214" width="30" height="84"  rx="11" fill="url(#dark)"/>
+    <rect x="380" y="196" width="40" height="120" rx="14" fill="url(#steel)"/>
+    <rect x="344" y="214" width="30" height="84"  rx="11" fill="url(#dark)"/>
+  </g>
+
+  <!-- ===== the sword, in front, pointing to the upper right ===== -->
+  <g transform="rotate(45 256 256)">
+    <!-- blade -->
+    <path d="M256 66 L300 142 L300 292 L212 292 L212 142 Z" fill="url(#blade)"/>
+    <path d="M256 108 L278 152 L278 282 L234 282 L234 152 Z" fill="#06070A" opacity="0.42"/>
+    <path d="M256 66 L300 142 L300 292" fill="none" stroke="#F8FFDE" stroke-width="6" stroke-linejoin="round" opacity="0.72"/>
+    <!-- crossguard -->
+    <rect x="186" y="292" width="140" height="26" rx="11" fill="url(#dark)"/>
+    <rect x="186" y="292" width="140" height="8"  rx="4"  fill="#6E7B93" opacity="0.6"/>
+    <!-- grip -->
+    <rect x="236" y="318" width="40" height="70" rx="14" fill="#1A2029"/>
+    <path d="M240 338 h32 M240 362 h32" stroke="#6E7B93" stroke-width="9" stroke-linecap="round"/>
+    <!-- pommel -->
+    <circle cx="256" cy="404" r="24" fill="url(#blade)"/>
+    <circle cx="256" cy="404" r="24" fill="none" stroke="#06070A" stroke-width="5" opacity="0.4"/>
+  </g>
+</svg>
