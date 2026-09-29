@@ -38,8 +38,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.15;font-weight:800}
 .mono{font-family:var(--mono)}
 
-header{position:sticky;top:0;z-index:40;background:rgba(8,9,11,.86);backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--line);margin:0 -14px;padding:12px 14px 0}
+/* The status bar sits ON TOP of the page in an installed iOS app, so the top
+   row has to be pushed below the notch or the clock and the camera cover it.
+   env() is 0 on everything that has no notch, so this costs nothing elsewhere. */
+header{position:sticky;top:0;z-index:40;background:rgba(8,9,11,.92);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);margin:0 -14px;
+  padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 0}
 .brandrow{display:flex;align-items:center;gap:12px;justify-content:space-between}
 .brand{display:flex;align-items:baseline;gap:9px}
 .brand b{font-size:21px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
@@ -52,6 +56,17 @@ header{position:sticky;top:0;z-index:40;background:rgba(8,9,11,.86);backdrop-fil
   background:rgba(200,255,0,.07);padding:5px 10px;border-radius:99px;white-space:nowrap;text-transform:uppercase;letter-spacing:.1em}
 nav{display:flex;gap:4px;overflow-x:auto;padding:11px 0 0;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
+/* on a phone the header was eating a third of the screen before you saw
+   anything: shrink the brand, drop the tagline, tighten every gap */
+@media(max-width:620px){
+  .brand b{font-size:16px;letter-spacing:.16em}
+  .brand span{display:none}
+  .brandrow{gap:8px}
+  .langbtn{font-size:10px;padding:4px 9px}
+  .wkbadge{font-size:9.5px;padding:4px 8px;letter-spacing:.06em}
+  nav{padding:8px 0 0;gap:3px}
+  nav button{padding:8px 11px;font-size:12px}
+}
 nav button{background:none;border:0;color:var(--dim);font:inherit;font-size:12.5px;font-weight:700;
   letter-spacing:.11em;text-transform:uppercase;padding:9px 12px 12px;cursor:pointer;white-space:nowrap;
   border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
@@ -165,6 +180,17 @@ label.f>span{display:block;font-size:10px;letter-spacing:.16em;text-transform:up
   border:1px solid var(--line);background:var(--bg2);color:var(--dim);cursor:pointer;white-space:nowrap}
 .engines button.on{border-color:var(--acc);background:rgba(200,255,0,.12);color:var(--acc);font-weight:700}
 .engines button:disabled{opacity:.4;cursor:not-allowed}
+/* --- zoom control --- */
+.zoomctl{position:fixed;right:12px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));z-index:55;
+  display:flex;flex-direction:column;gap:7px}
+.zoomctl button{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);
+  background:rgba(13,15,19,.92);backdrop-filter:blur(10px);color:var(--mut);
+  font-size:17px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.zoomctl button:active{transform:scale(.93)}
+.zoomctl button.on{color:var(--acc);border-color:rgba(200,255,0,.45);background:rgba(200,255,0,.12)}
+/* with the lock on, kill double-tap-to-zoom as well as the pinch */
+html.nozoom, html.nozoom body{touch-action:manipulation}
+@media print{.zoomctl{display:none}}
 /* --- device sync --- */
 .syncrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .syncdot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:0 0 9px}
@@ -244,7 +270,7 @@ label.f>span{display:block;font-size:10px;letter-spacing:.16em;text-transform:up
 .jaw.on{border-left-color:var(--good)}
 .jaw .chk{margin-left:-14px}
 
-#timer{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:60;display:none;
+#timer{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom, 0px));z-index:60;display:none;
   background:rgba(13,15,19,.96);backdrop-filter:blur(16px);border:1px solid rgba(200,255,0,.35);
   border-radius:99px;padding:9px 10px 9px 16px;align-items:center;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.7);
   width:calc(100% - 28px);max-width:420px}
@@ -346,6 +372,10 @@ svg.chart{display:block;width:100%;height:auto;overflow:visible}
   <button class="btn sm p" id="tskip">Listo</button>
 </div>
 <input type="file" id="exfile" accept="image/*" hidden>
+<div class="zoomctl no-print" id="zoomctl">
+  <button id="zlock" title="Lock zoom">&#128274;</button>
+  <button id="zreset" title="Reset view">&#8982;</button>
+</div>
 <div class="modal" id="modal"><div class="in" id="modalin"></div></div>
 <div class="toast" id="toast"></div>
 <script>

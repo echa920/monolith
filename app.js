@@ -321,7 +321,11 @@ function render(t) {
      measure: rMeasure, progress: rProgress, plan: rPlan, guide: rGuide })[t]();
   const wk = weekOf(new Date());
   const b = blockOf(wk);
-  $('#wkbadge').textContent = tr('week') + ' ' + wk + ' · ' + tr('cycle') + ' ' + cycleWeek(wk) + '/12 · RIR ' + b.rir;
+  /* the long form does not fit next to a notch, so shorten it on narrow screens */
+  const narrow = (window.innerWidth || 999) < 560;
+  $('#wkbadge').textContent = narrow
+    ? tr('week_s') + wk + ' · ' + cycleWeek(wk) + '/12 · RIR ' + b.rir
+    : tr('week') + ' ' + wk + ' · ' + tr('cycle') + ' ' + cycleWeek(wk) + '/12 · RIR ' + b.rir;
 }
 
 /* ============ VIEW: TODAY ============ */
@@ -1809,11 +1813,71 @@ function doImport(file) {
   fr.readAsText(file);
 }
 
+/* ============ zoom control ============
+   iOS ignores user-scalable=no, so locking the zoom means swallowing Safari's
+   own gesture events. Resetting it means briefly clamping maximum-scale and
+   letting go — there is no API that says "go back to 100%". */
+const VP_FREE = 'width=device-width,initial-scale=1,viewport-fit=cover';
+const VP_LOCK = 'width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover';
+function vpMeta() { return document.querySelector('meta[name=viewport]'); }
+function zoomLocked() { return !!(S.prefs && S.prefs.zoomLock); }
+function applyZoomLock() {
+  const on = zoomLocked();
+  const m = vpMeta(); if (m) m.setAttribute('content', on ? VP_LOCK : VP_FREE);
+  document.documentElement.classList.toggle('nozoom', on);
+  const b = $('#zlock');
+  if (b) {
+    b.classList.toggle('on', on);
+    b.innerHTML = on ? '&#128274;' : '&#128275;';
+    b.title = on ? (LANG === 'es' ? 'Zoom bloqueado' : 'Zoom locked')
+                 : (LANG === 'es' ? 'Bloquear zoom' : 'Lock zoom');
+  }
+}
+/* Safari fires these for pinch; preventing them is the only thing that
+   actually stops the zoom on an iPhone. */
+function zoomGuard(e) { if (zoomLocked()) e.preventDefault(); }
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, zoomGuard, { passive: false }));
+
+function resetView() {
+  const m = vpMeta();
+  if (m) {
+    m.setAttribute('content', VP_LOCK);
+    /* letting go on the next frame is what snaps the page back to 100% */
+    setTimeout(() => m.setAttribute('content', zoomLocked() ? VP_LOCK : VP_FREE), 400);
+  }
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  if (document.scrollingElement) document.scrollingElement.scrollLeft = 0;
+  toast(LANG === 'es' ? 'Vista recentrada' : 'View reset');
+}
+function wireZoom() {
+  const l = $('#zlock');
+  if (l) l.onclick = () => {
+    S.prefs = S.prefs || {};
+    S.prefs.zoomLock = !zoomLocked();
+    save();
+    applyZoomLock();
+    if (zoomLocked()) resetView();
+    else toast(LANG === 'es' ? 'Zoom libre' : 'Zoom unlocked');
+  };
+  const r = $('#zreset'); if (r) r.onclick = resetView;
+  applyZoomLock();
+}
+
 /* ============ boot ============ */
 migrateSplit();
 ensureStart();
 applyLang(S.prefs && S.prefs.lang);
 paintLangBtn();
+wireZoom();
+/* Re-render only when the narrow/wide band flips. Listening to every resize
+   would rebuild the view each time the phone keyboard opens, which destroys
+   whatever input you were typing in. */
+let _band = (window.innerWidth || 999) < 560;
+window.addEventListener('resize', () => {
+  const b = (window.innerWidth || 999) < 560;
+  if (b !== _band) { _band = b; render(cur); }
+});
 $('#langbtn').onclick = () => setLang(LANG === 'es' ? 'en' : 'es');
 phInit().then(() => { if (cur === 'photos') rPhotos(); });
 nav();

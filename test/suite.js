@@ -18,6 +18,7 @@ function el() {
     getContext() { return { drawImage() {}, clearRect() {}, beginPath() {}, arc() {}, fill() {}, stroke() {},
       moveTo() {}, lineTo() {}, setLineDash() {}, translate() {}, scale() {} }; },
     toDataURL() { return 'x'; }, toBlob(c) { c({}); },
+    _attr: {}, setAttribute(k, v) { this._attr[k] = v; }, getAttribute(k) { return this._attr[k]; },
     getBoundingClientRect() { return { left: 0, top: 0, width: 300, height: 400 }; }
   };
   return e;
@@ -65,6 +66,7 @@ function boot(saved) {
     fetch: () => Promise.reject(new Error('no network in tests')),
     TextDecoder: TextDecoder,
     navigator: { vibrate() {} }, location: { reload() {} }, confirm: () => true,
+    addEventListener() {}, removeEventListener() {}, scrollTo() {}, innerWidth: 900,
     Image: function () {
       const self = this; self.onload = null; self.width = 1200; self.height = 1600;
       Object.defineProperty(self, 'src', { set() { setTimeout(() => self.onload && self.onload(), 0); } });
@@ -75,7 +77,10 @@ function boot(saved) {
       self.readAsDataURL = function () { setTimeout(() => { self.result = 'data:image/jpeg;base64,PHOTO'; if (self.onload) self.onload(); }, 0); };
     },
     URL: { createObjectURL: () => '', revokeObjectURL() {} },
-    document: { querySelector: () => el(), querySelectorAll: () => [], createElement: () => el(),
+    /* querySelector must return the SAME node for the same selector, or code
+       that sets an attribute and code that reads it talk to different objects */
+    document: { _q: {}, querySelector(sel) { return this._q[sel] || (this._q[sel] = el()); },
+      querySelectorAll: () => [], createElement: () => el(),
       addEventListener() {}, visibilityState: 'visible', head: el(), documentElement: el(),
       getElementById: () => null, body: el() }
   };
@@ -272,6 +277,46 @@ SA.sync.token = '';
 let threw = null;
 try { await A.syncNow(() => {}); } catch (e) { threw = e; }
 ok(threw && /token/.test(threw.message), 'without a token it stops before touching the network');
+
+head('iOS LAYOUT AND ZOOM');
+const html = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
+ok(html.indexOf('padding:calc(10px + env(safe-area-inset-top') >= 0,
+   'the header reserves room for the notch, so the clock cannot cover the top row');
+ok(html.indexOf('viewport-fit=cover') >= 0, 'and the viewport opts into safe-area insets at all');
+ok(html.indexOf('bottom:calc(18px + env(safe-area-inset-bottom') >= 0,
+   'the rest timer clears the home indicator');
+ok(html.indexOf('@media(max-width:620px)') >= 0 && html.indexOf('.brand span{display:none}') >= 0,
+   'the header shrinks on a phone and drops the tagline');
+ok(/id="zlock"/.test(html) && /id="zreset"/.test(html), 'both zoom buttons exist in the page');
+
+/* the badge has to fit beside a notch */
+S.prefs = S.prefs || {};
+ctx.render('today');
+const wide = ctx.$get('tr')('week') + ' ';
+ok(ctx.$get('tr')('week_s').length <= 2, 'there is a one-letter week label for narrow screens');
+ctx.setLang('es');
+ok(ctx.$get('tr')('week_s') === 'S', 'in Spanish too');
+ctx.setLang('en');
+
+/* the zoom lock */
+S.prefs.zoomLock = false;
+ok(ctx.zoomLocked() === false, 'zoom starts unlocked');
+S.prefs.zoomLock = true;
+ok(ctx.zoomLocked() === true, 'and the preference is what drives it');
+ctx.applyZoomLock();
+const vp = ctx.vpMeta();
+ok(/user-scalable=no/.test(vp.getAttribute('content')), 'locking clamps the viewport');
+S.prefs.zoomLock = false;
+ctx.applyZoomLock();
+ok(!/user-scalable=no/.test(vp.getAttribute('content')), 'unlocking releases it again');
+ok(ctx.$get('VP_LOCK') !== ctx.$get('VP_FREE') && /viewport-fit=cover/.test(ctx.$get('VP_LOCK')),
+   'both viewport modes keep the safe-area opt-in, so the notch fix survives a lock');
+try { ctx.resetView(); console.log('OK  reset view runs without throwing'); }
+catch (e) { fails++; console.log('FAIL resetView: ' + e.message); }
+/* the lock preference is a normal setting, so it syncs and survives a reload */
+S.prefs.zoomLock = true;
+ok(JSON.stringify(ctx.syncPayload()).indexOf('zoomLock') >= 0, 'and it travels with the rest of your settings');
+S.prefs.zoomLock = false;
 
 head('LANGUAGE');
 ok(ctx.$get('LANG') === 'en' && EX.bench.n === 'Barbell Bench Press', 'boots in English');

@@ -43,15 +43,15 @@ const UI = {
     lang_btn: 'ES', lang_title: 'Cambiar a español',
     tab_today: 'Today', tab_quest: 'Quest', tab_photos: 'Photos', tab_symmetry: 'Symmetry',
     tab_measure: 'Measure', tab_progress: 'Progress', tab_plan: 'Plan', tab_guide: 'Guide',
-    tab_coach: 'Monolith AI',
-    week: 'Week', cycle: 'Cycle'
+    tab_coach: 'AI',
+    week: 'Week', cycle: 'Cycle', week_s: 'W'
   },
   es: {
     lang_btn: 'EN', lang_title: 'Switch to English',
     tab_today: 'Hoy', tab_quest: 'Aventura', tab_photos: 'Fotos', tab_symmetry: 'Simetría',
     tab_measure: 'Medidas', tab_progress: 'Progreso', tab_plan: 'Plan', tab_guide: 'Guía',
-    tab_coach: 'Monolith AI',
-    week: 'Semana', cycle: 'Ciclo'
+    tab_coach: 'AI',
+    week: 'Semana', cycle: 'Ciclo', week_s: 'S'
   }
 };
 /* named tr: app.js already uses both t (locals) and T (the rest timer). */
