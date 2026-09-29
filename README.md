@@ -27,8 +27,9 @@ Everything lives in the browser's `localStorage` and `IndexedDB` on the device
 you are using. That means:
 
 - Nothing is uploaded anywhere. There is no backend to upload to.
-- **Devices do not sync.** Your phone and your laptop keep separate logs.
-  Settings → Export moves a backup between them.
+- **Optional sync.** Settings → Sync pushes everything, photos included, to a
+  secret Gist on *your own* GitHub account. Nothing goes to a server of mine.
+  Off by default; without it, devices stay independent and Export moves a backup.
 - Clearing site data erases everything. Export now and then.
 
 The one exception is Monolith AI's optional Claude engine: if you paste an API

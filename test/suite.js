@@ -5,7 +5,7 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const DIR = path.join(__dirname, '..');
 const FILES = ['data.js', 'lang.js', 'anatomy.js', 'ranks.js', 'exphoto.js',
-               'game.js', 'world.js', 'planner.js', 'coach.js', 'app.js'];
+               'game.js', 'world.js', 'planner.js', 'coach.js', 'sync.js', 'app.js'];
 
 /* ---------------- DOM stub ---------------- */
 function el() {
@@ -205,6 +205,73 @@ ok(ctx.$get('AI_ENGINES')[0] === 'free' && ctx.aiEngine() === 'free', 'Monolith 
 const plan = ctx.plannerAnswer('give me a push day');
 ok(!!plan.plan && plan.plan.list.length >= 3, 'the planner understands "push day" and builds one');
 ok(plan.plan.list.every(id => EX_MUS[id.id].p.some(mm => PUSH_M.indexOf(mm) >= 0)), 'and it is genuinely push work');
+
+head('SYNC BETWEEN DEVICES');
+/* the merge is the dangerous part: a bad one silently deletes a workout */
+const A = boot(makeSeed(['PUSH','PULL','LEGS']));
+const SA = A.$get('S');
+SA.sync = { token: 't', gist: '', last: null, device: 'a' };
+
+/* device B has trained on a day A knows nothing about, and has a photo A lacks */
+const soloKey = '2099-03-02';
+const remote = JSON.parse(JSON.stringify(A.syncPayload()));
+remote.logs[soloKey] = { s: 'PUSH', sets: { bench: [{ w: 50, r: 8, rir: 2, done: true }] }, chk: {}, notes: '', done: true };
+remote.photos.push({ id: 9001, date: '2099-03-02', pose: 'front', marks: null });
+remote.measures.push({ date: '2099-03-02', peso: 70 });
+remote.jaw = { '2099-03-02': { tuck: true } };
+remote.at = new Date(Date.now() + 60000).toISOString();
+
+/* and A has a day B knows nothing about */
+SA.logs['2099-03-05'] = { s: 'LEGS', sets: { legpress: [{ w: 90, r: 10, rir: 2, done: true }] }, chk: {}, notes: '', done: true };
+const beforeCount = Object.keys(SA.logs).length;
+
+const res = A.syncMerge(remote);
+ok(!!SA.logs[soloKey], 'a session only the other device had is pulled in');
+ok(!!SA.logs['2099-03-05'], 'and the session only THIS device had survives — nothing is overwritten');
+ok(Object.keys(SA.logs).length === beforeCount + 1, 'exactly one session was added, none lost');
+ok(res.logs === 1, 'and it reports what it pulled');
+ok(SA.photos.some(p => p.id === 9001), 'a photo the other device had is added to the library');
+ok(SA.measures.some(m => m.date === '2099-03-02'), 'so are its measurements');
+ok(!!(SA.jaw && SA.jaw['2099-03-02']), 'and its jaw-routine days');
+
+/* the same day logged on both: the fuller version must win */
+SA.logs['2099-03-09'] = { s: 'PUSH', sets: { bench: [{ w: 40, r: 8, done: true }] }, chk: {}, notes: '', done: false };
+const r2 = JSON.parse(JSON.stringify(A.syncPayload()));
+r2.logs['2099-03-09'] = { s: 'PUSH', sets: { bench: [{ w: 40, r: 8, done: true }, { w: 40, r: 8, done: true }, { w: 40, r: 8, done: true }] }, chk: {}, notes: '', done: true };
+r2.at = new Date(Date.now() + 120000).toISOString();
+A.syncMerge(r2);
+ok(Object.keys(SA.logs['2099-03-09'].sets.bench).length === 3, 'when both sides logged the same day, the fuller session wins');
+
+/* merging twice must not duplicate anything */
+const n1 = Object.keys(SA.logs).length, p1 = SA.photos.length, m1 = SA.measures.length;
+A.syncMerge(remote);
+ok(Object.keys(SA.logs).length === n1 && SA.photos.length === p1 && SA.measures.length === m1,
+   'merging the same payload twice adds nothing — sync is safe to repeat');
+
+/* secrets must never leave the device */
+SA.ai = { engine: 'claude', key: 'sk-ant-SECRET', chat: [{ role: 'user', content: 'hi' }], spent: { in: 1, out: 2, cached: 0 } };
+SA.sync.token = 'ghp_SECRET';
+const wire = JSON.stringify(A.syncPayload());
+ok(wire.indexOf('sk-ant-SECRET') < 0, 'the Claude API key is NOT in what gets uploaded');
+ok(wire.indexOf('ghp_SECRET') < 0, 'neither is the GitHub token');
+ok(wire.indexOf('chat') >= 0, 'but the AI conversation itself does travel');
+
+/* a payload from a future format version is ignored rather than half-applied */
+const logsBefore = JSON.stringify(SA.logs);
+A.syncMerge({ v: 99, logs: { '2099-04-01': { s: 'PUSH', sets: {}, done: true } } });
+ok(JSON.stringify(SA.logs) === logsBefore, 'a payload from an unknown version is refused, not half-applied');
+
+/* the photo list covers progress photos AND the ones pinned to exercises */
+SA.exPhotos = { bench: { a: 1 } };
+const ids = A.allPhotoIds();
+ok(ids.indexOf('ex-bench-a') >= 0 && ids.some(x => /^[0-9]+$/.test(x)),
+   'the upload list includes both progress photos and exercise photos');
+
+/* with no token it refuses instead of failing halfway */
+SA.sync.token = '';
+let threw = null;
+try { await A.syncNow(() => {}); } catch (e) { threw = e; }
+ok(threw && /token/.test(threw.message), 'without a token it stops before touching the network');
 
 head('LANGUAGE');
 ok(ctx.$get('LANG') === 'en' && EX.bench.n === 'Barbell Bench Press', 'boots in English');

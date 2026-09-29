@@ -12,7 +12,7 @@ const CACHE = 'monolith-v1';
 const SHELL = [
   './', './index.html',
   './data.js', './lang.js', './anatomy.js', './ranks.js', './exphoto.js',
-  './game.js', './world.js', './planner.js', './coach.js', './app.js',
+  './game.js', './world.js', './planner.js', './coach.js', './sync.js', './app.js',
   './icon.svg', './icon-192.png', './icon-512.png', './icon-180.png',
   './manifest.webmanifest'
 ];

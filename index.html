@@ -165,6 +165,11 @@ label.f>span{display:block;font-size:10px;letter-spacing:.16em;text-transform:up
   border:1px solid var(--line);background:var(--bg2);color:var(--dim);cursor:pointer;white-space:nowrap}
 .engines button.on{border-color:var(--acc);background:rgba(200,255,0,.12);color:var(--acc);font-weight:700}
 .engines button:disabled{opacity:.4;cursor:not-allowed}
+/* --- device sync --- */
+.syncrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.syncdot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:0 0 9px}
+.syncdot.on{background:var(--good)}
+.syncdot.busy{background:var(--warn)}
 /* --- your own photo on an exercise --- */
 .exph{position:relative;border-radius:8px;overflow:hidden;background:#0E1219;min-height:90px}
 .exph img{display:block;width:100%;height:auto}
@@ -359,6 +364,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 <script src="anatomy.js"></script>
 <script src="ranks.js"></script>
 <script src="exphoto.js"></script>
+<script src="sync.js"></script>
 <script src="game.js"></script>
 <script src="world.js"></script>
 <script src="planner.js"></script>

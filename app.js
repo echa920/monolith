@@ -1671,6 +1671,69 @@ function rPlan() {
   $$('[data-edses]').forEach(b => b.onclick = () => openSesEdit(b.dataset.edses, rPlan));
 }
 
+/* ---- sync between your own devices ---- */
+function syncCard() {
+  const es = LANG === 'es';
+  const st = syncState();
+  const on = !!st.token;
+  return '<div class="spread"><div class="sec-t" style="margin:0">' + (es ? 'Sincronizar dispositivos' : 'Sync your devices') + '</div>' +
+    '<span class="syncrow"><i class="syncdot' + (on ? ' on' : '') + '" id="syncdot"></i>' +
+    '<span class="tiny mono" id="syncstat">' +
+    (on ? (st.last ? (es ? 'última vez ' : 'last ') + fdate(st.last.slice(0, 10)) : (es ? 'sin sincronizar' : 'never synced'))
+        : (es ? 'apagado' : 'off')) + '</span></span></div>' +
+    '<p class="sub" style="margin:8px 0 12px">' + (es
+      ? 'Tu registro, tus medidas, tu calendario, tu rango y <b>tus fotos</b> viajan a un <b>Gist secreto de tu propia cuenta de GitHub</b>. Es un archivo tuyo: lo ves y lo borras cuando quieras. No hay ningún servidor mío por medio.'
+      : 'Your log, measurements, calendar, rank and <b>your photos</b> travel to a <b>secret Gist on your own GitHub account</b>. It is your file: you can read it or delete it whenever you like. No server of mine is involved.') + '</p>' +
+    '<div class="note b" style="margin-bottom:12px">' + (es
+      ? '<b>Antes de activarlo, sé consciente:</b> con esto tus fotos de progreso dejan de estar solo en tus dispositivos y pasan a estar también en los servidores de GitHub. El Gist es secreto (nadie lo encuentra buscando), pero <b>no está cifrado</b> y quien tenga el enlace puede verlo. Tú elegiste esta opción sabiéndolo; si cambias de idea, borra el Gist y apaga esto.<br><br>' +
+        '<b>Tu clave de Claude NO se sube</b>, a propósito. Una credencial dentro de un Gist es una credencial filtrada.'
+      : '<b>Before you turn this on:</b> your progress photos stop being only on your devices and end up on GitHub\'s servers too. The Gist is secret (nobody finds it by searching) but it is <b>not encrypted</b>, and anyone with the link can read it. You chose this knowing that; if you change your mind, delete the Gist and switch this off.<br><br>' +
+        '<b>Your Claude key is NOT uploaded</b>, deliberately. A credential inside a Gist is a credential leaked.') + '</div>' +
+    '<label class="f"><span>' + (es ? 'Token de GitHub (solo permiso de gists)' : 'GitHub token (gist permission only)') + '</span>' +
+    '<input type="password" id="sytok" placeholder="github_pat_… / ghp_…" autocomplete="off" value="' + (st.token ? '' : '') + '"></label>' +
+    '<p class="tiny" style="margin:8px 0 12px">' + (es
+      ? 'Créalo en github.com → Settings → Developer settings → Tokens. Dale <b>solo</b> el permiso de <b>Gists: read and write</b>. Con ese permiso no puede tocar nada más de tu cuenta.'
+      : 'Create one at github.com → Settings → Developer settings → Tokens. Give it <b>only</b> <b>Gists: read and write</b>. With that scope it cannot touch anything else in your account.') + '</p>' +
+    '<div class="row wrap">' +
+    '<button class="btn p" id="sysave">' + (es ? 'Guardar y sincronizar' : 'Save and sync') + '</button>' +
+    (on ? '<button class="btn" id="sygo">' + (es ? 'Sincronizar ahora' : 'Sync now') + '</button>' +
+          (st.gist ? '<a class="btn gh" href="https://gist.github.com/' + esc(st.gist) + '" target="_blank" rel="noopener">' + (es ? 'Ver el Gist' : 'See the Gist') + '</a>' : '') +
+          '<button class="btn danger" id="syoff">' + (es ? 'Apagar' : 'Turn off') + '</button>' : '') +
+    '</div>';
+}
+function wireSync() {
+  const es = LANG === 'es';
+  const stat = m => { const e = $('#syncstat'); if (e) e.textContent = m; };
+  const busy = b => { const d = $('#syncdot'); if (d) d.classList.toggle('busy', b); };
+  const run = async () => {
+    busy(true);
+    try {
+      const r = await syncNow(stat);
+      toast(es ? 'Sincronizado' : 'Synced');
+      stat((es ? 'listo · ' : 'done · ') + r.pulledLogs + (es ? ' sesiones nuevas, ' : ' new sessions, ') +
+           r.pulledPhotos + '↓ ' + r.pushedPhotos + '↑ ' + (es ? 'fotos' : 'photos'));
+      setTimeout(() => render('guide'), 2500);
+    } catch (e) {
+      stat((es ? 'error: ' : 'error: ') + e.message);
+      toast(es ? 'No se pudo sincronizar' : 'Sync failed');
+    }
+    busy(false);
+  };
+  const sv = $('#sysave');
+  if (sv) sv.onclick = () => {
+    const v = ($('#sytok').value || '').trim();
+    if (v) { syncState().token = v; save(); }
+    if (!syncState().token) return toast(es ? 'Pega el token primero' : 'Paste the token first');
+    run();
+  };
+  const go = $('#sygo'); if (go) go.onclick = run;
+  const off = $('#syoff'); if (off) off.onclick = () => {
+    if (!confirm(es ? '¿Apagar la sincronización? El Gist NO se borra: entra en él para eliminarlo si quieres.'
+                    : 'Turn sync off? The Gist is NOT deleted: open it to remove it if you want to.')) return;
+    S.sync.token = ''; save(); render('guide');
+  };
+}
+
 /* ============ VIEW: GUIDE ============ */
 function rGuide() {
   let h = '<div class="card"><div class="h-lg">Guide</div>' +
@@ -1690,6 +1753,7 @@ function rGuide() {
     '</div>' +
     '<p class="tiny" style="margin-top:8px">The bodyweight estimate is only used when you have not logged a real weigh-in. Trials like "bench your own bodyweight" need a number to aim at.</p>' +
     '<div class="chk ' + (S.prefs.sound ? 'on' : '') + '" id="snd" style="margin-top:12px"><div class="box">&#10003;</div><span>Sound when the rest timer ends</span></div>' +
+    '<div class="hr"></div>' + syncCard() +
     '<div class="hr"></div>' +
     '<div class="sec-t">Backup</div>' +
     '<p class="sub" style="margin-bottom:12px">Everything lives in this browser. If you wipe browsing data or change computers, it is gone. Export now and then — the file includes your photos.</p>' +
@@ -1704,6 +1768,7 @@ function rGuide() {
   $('#palt').onchange = e => { S.profile.height = +e.target.value || null; save(); };
   $('#ppeso').onchange = e => { S.profile.weight = +e.target.value || null; save(); };
   $('#snd').onclick = () => { S.prefs.sound = !S.prefs.sound; save(); $('#snd').classList.toggle('on', S.prefs.sound); };
+  wireSync();
   $('#exp').onclick = doExport;
   $('#imp').onclick = () => $('#impf').click();
   $('#impf').onchange = e => { if (e.target.files[0]) doImport(e.target.files[0]); };
