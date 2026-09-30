@@ -319,16 +319,65 @@ ok(JSON.stringify(ctx.syncPayload()).indexOf('zoomLock') >= 0, 'and it travels w
 S.prefs.zoomLock = false;
 
 head('LANGUAGE');
+const T = ['EX','SESSIONS','WARMUP','START','GUIDE','BLOCKS','JAW','JAW_TRUTH','MEASURES','NO_KIT','POSES','MARKS','POST'];
+const snapEN = {}; T.forEach(k => snapEN[k] = JSON.stringify(ctx.$get(k)));
 ok(ctx.$get('LANG') === 'en' && EX.bench.n === 'Barbell Bench Press', 'boots in English');
+ok(Object.keys(ctx.$get('I18N_TARGETS')).length === T.length,
+   'all ' + T.length + ' data structures are registered for translation');
+
 ctx.setLang('es');
-ok(SESSIONS.PUSH.label === 'EMPUJE' && SESSIONS.PULL.label === 'TIRÓN' && SESSIONS.LEGS.label === 'PIERNA',
-   'the three days translate: ' + Object.keys(SESSIONS).map(k => SESSIONS[k].label).join(' / '));
-ok(ctx.$get('WARMUP').PULL[1][1] === 'Movilidad torácica', 'so do the warm-ups');
-try { ctx.viewDate = dOn(2); ctx.render('today'); ['plan', 'quest', 'guide'].forEach(v => ctx.render(v));
+const untouched = T.filter(k => JSON.stringify(ctx.$get(k)) === snapEN[k]);
+ok(untouched.length === 0, 'every registered structure actually changes in Spanish' +
+   (untouched.length ? ' — still English: ' + untouched.join(', ') : ''));
+
+/* the big reading surfaces, specifically */
+const G = ctx.$get('GUIDE');
+ok(G.length === 14 && G.every(x => x.t && x.body), 'the guide keeps all 14 sections, title and body');
+ok(!G.some(x => /Reps In Reserve|Beginner mistakes|when to stop/.test(x.t)), 'none of its titles are still English');
+ok(/repeticiones en reserva/i.test(G[0].t) && /velocímetro/.test(G[0].body),
+   'and it reads as Spanish prose, not a word-for-word swap');
+ok(ctx.$get('JAW').every(j => /[áéíóúñ¿]/.test(j.why + j.how.join(''))),
+   'the jaw routine is translated down to its how-to steps');
+ok(ctx.$get('MEASURES')[0].n === 'Peso corporal' && ctx.$get('MEASURES')[0].k === 'peso',
+   'measurements translate the label but keep the storage key');
+ok(ctx.$get('MEASURES')[0].core === true, 'and the flag that marks the important ones');
+ok(ctx.$get('POST')[0][0] === 'photo',
+   'the after-workout list keeps its ids, so ticks already saved still count');
+ok(ctx.$get('BLOCKS')[0].rirN === 3 && /Adaptación/.test(ctx.$get('BLOCKS')[0].name),
+   'blocks translate their name but keep the numbers that drive the programme');
+ok(ctx.$get('MARKS')[0].c === '#C8FF00', 'symmetry marks keep their colours');
+ok(EX.pullup.n === 'Dominada' && EX.hipthrust.n.indexOf('Cadera') >= 0, 'the new exercises are translated too');
+const enEX = JSON.parse(snapEN.EX);
+const sameCues = Object.keys(EX).filter(id => EX[id].cues.join('') === enEX[id].cues.join(''));
+ok(sameCues.length === 0, 'all ' + Object.keys(EX).length + ' exercises have Spanish cues' +
+   (sameCues.length ? ' — missing: ' + sameCues.join(', ') : ''));
+const sameName = Object.keys(EX).filter(id => EX[id].n === enEX[id].n);
+ok(sameName.length === 0, 'and Spanish names' + (sameName.length ? ' — missing: ' + sameName.join(', ') : ''));
+
+try { ctx.viewDate = dOn(2); ctx.render('today');
+  ['plan', 'quest', 'guide', 'measure', 'coach', 'progress', 'symmetry'].forEach(v => ctx.render(v));
   console.log('OK  every view renders in Spanish'); }
 catch (err) { fails++; console.log('FAIL Spanish render: ' + err.message); }
+
 ctx.setLang('en');
-ok(SESSIONS.PUSH.label === 'PUSH', 'and switching back restores English');
+const drift = T.filter(k => JSON.stringify(ctx.$get(k)) !== snapEN[k]);
+ok(drift.length === 0, 'switching back restores every structure byte for byte' +
+   (drift.length ? ' — drifted: ' + drift.join(', ') : ''));
+ok(EX.pullup.n === 'Pull-up' && ctx.$get('GUIDE')[0].t === 'RIR — Reps In Reserve', 'including the guide and the new lifts');
+
+head('THE FORTY EXERCISES');
+ok(Object.keys(EX).length === 40, 'the catalogue holds 40 exercises');
+const START = ctx.$get('START'), POSE = ctx.$get('EX_POSE');
+ok(Object.keys(EX).every(id => START[id]), 'every one has a starting weight');
+ok(Object.keys(EX).every(id => POSE[id] && EX_MUS[id]), 'every one has a diagram and a muscle map');
+ok(Object.keys(EX).every(id => EX_MUS[id].p.length > 0), 'and names a prime mover');
+const byGroup = {};
+Object.keys(EX).forEach(id => { const g = EX[id].g.split(/[+·]/)[0].trim(); byGroup[g] = (byGroup[g] || 0) + 1; });
+console.log('    groups: ' + Object.keys(byGroup).map(g => g + ' ' + byGroup[g]).join(', '));
+ok(Object.keys(EX).filter(id => /chest/i.test(EX_MUS[id].p.join())).length >= 6, 'at least 6 chest options');
+ok(Object.keys(EX).filter(id => /lat|rhomboid/.test(EX_MUS[id].p.join())).length >= 7, 'at least 7 back options');
+ok(Object.keys(EX).filter(id => /biceps|triceps/.test(EX_MUS[id].p.join())).length >= 9, 'at least 9 arm options');
+ok(Object.keys(EX).filter(id => /quad|ham|glute|calf/.test(EX_MUS[id].p.join())).length >= 10, 'at least 10 leg options');
 
 console.log(fails ? '\n>>> ' + fails + ' FAILURES' : '\n>>> ALL GREEN');
 process.exit(fails ? 1 : 0);

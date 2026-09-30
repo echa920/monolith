@@ -407,7 +407,393 @@ const EX = {
     ],
     errs: ['Using bodyweight to drive it down.', 'Elbows travelling.', 'Not extending fully.'],
     heavy: 'If it lifts you off the floor, drop one plate.'
-  }
+  },
+
+  /* ---------------- extra CHEST ---------------- */
+  dbpress: {
+    n: 'Flat Dumbbell Press', g: 'Chest', sets: 3, lo: 8, hi: 12, rest: 120, kind: 'comp-up',
+    inc: 2,
+    alt: 'Machine chest press.',
+    feel: 'Chest, with a deeper stretch at the bottom than a barbell allows.',
+    cues: [
+      'Sit with the dumbbells on your thighs and kick them up with your knees as you lie back.',
+      'Shoulder blades pinned back and down, feet flat on the floor.',
+      'Lower until your elbows are just below the line of your torso — that is the stretch a barbell cannot give you.',
+      'Press up and slightly together, without clanging them at the top.',
+      'Wrists stacked straight over the elbows the whole way.'
+    ],
+    errs: [
+      'Letting the dumbbells drift out wide: the shoulder takes the load instead of the chest.',
+      'Half range, stopping level with the chest.',
+      'Dropping them to the floor at the end of the set instead of sitting up with them on your chest.'
+    ],
+    heavy: 'If you cannot get them into position on your own, they are too heavy. Dumbbells punish ego more than a barbell does.'
+  },
+  cablefly: {
+    n: 'Cable Fly', g: 'Chest', sets: 3, lo: 12, hi: 15, rest: 75, kind: 'iso',
+    inc: 2.5,
+    alt: 'Pec deck machine, or dumbbell flyes on a flat bench.',
+    feel: 'Across the middle of the chest, strongest when your hands come together.',
+    cues: [
+      'Pulleys set at roughly shoulder height for the mid chest, lower for the upper chest.',
+      'One foot forward, torso leaned about 15° into the movement.',
+      'Elbows locked at a slight, fixed bend. They do not open and close — the shoulders do.',
+      'Bring your hands together in front of your sternum and squeeze for a full second.',
+      'Let them travel back until you feel a stretch across the chest, then stop.'
+    ],
+    errs: [
+      'Bending and straightening the elbows: that turns it into a bad press.',
+      'Going so far back that the shoulder takes over the stretch.',
+      'Rushing. This is the one exercise where a slow squeeze is the entire point.'
+    ],
+    heavy: 'If your elbows start bending to move the weight, drop a plate. A fly is never heavy.'
+  },
+  machfly: {
+    n: 'Pec Deck', g: 'Chest', sets: 3, lo: 12, hi: 15, rest: 75, kind: 'iso',
+    inc: 5,
+    alt: 'Cable fly.',
+    feel: 'The inner chest, with the machine holding the path for you.',
+    cues: [
+      'Set the seat so the handles sit at chest height, not shoulder height.',
+      'Back flat against the pad, feet planted.',
+      'Squeeze your hands together and hold for a second where the tension peaks.',
+      'Open slowly until you feel the chest stretch, without letting the weights touch down.'
+    ],
+    errs: [
+      'Seat too low: it becomes a shoulder exercise.',
+      'Letting the stack slam at the bottom of every rep.',
+      'Shrugging the shoulders up towards the ears as you squeeze.'
+    ],
+    heavy: 'If your shoulders roll forward to finish the rep, lower the weight.'
+  },
+  dipchest: {
+    n: 'Chest Dip (assisted)', g: 'Chest + triceps', sets: 3, lo: 6, hi: 10, rest: 120, kind: 'comp-up',
+    inc: 5,
+    alt: 'Assist machine at first; decline press if the shoulder complains.',
+    feel: 'Lower chest and triceps.',
+    cues: [
+      'Start on the assist machine. More assistance means less of your bodyweight to lift.',
+      'Lean your torso FORWARD about 30° — upright makes it a triceps exercise, leaning makes it a chest one.',
+      'Elbows flare slightly out and back, not pinned to your sides.',
+      'Lower until your upper arms are roughly parallel to the floor and no further.',
+      'Press back up without locking the elbows hard at the top.'
+    ],
+    errs: [
+      'Going too deep. Past parallel the shoulder is in its most vulnerable position and there is nothing to gain.',
+      'Bouncing at the bottom.',
+      'Shrugging: keep the shoulders pulled down away from the ears throughout.'
+    ],
+    heavy: 'Any pinch at the front of the shoulder means stop the set and shorten the range. Depth is not worth a shoulder.'
+  },
+
+  /* ---------------- extra BACK ---------------- */
+  pullup: {
+    n: 'Pull-up', g: 'Lats', sets: 3, lo: 5, hi: 10, rest: 150, kind: 'comp-up',
+    inc: 0,
+    alt: 'Assisted pull-up machine, or a band looped under your knee, until you own 5 clean reps.',
+    feel: 'Lats, from the armpit down the side of the back.',
+    cues: [
+      'Grip slightly wider than your shoulders, palms facing away.',
+      'Start from a dead hang with straight arms, then pull the shoulders DOWN before you bend an elbow.',
+      'Drive the elbows down and back towards your ribs, chest to the bar.',
+      'Chin clears the bar without craning the neck.',
+      'Lower over 2–3 seconds all the way back to a full hang.'
+    ],
+    errs: [
+      'Kipping: swinging the legs to generate the rep. If you need it, use the assist machine instead.',
+      'Stopping half way down. The bottom of a pull-up is where the lat actually grows.',
+      'Shrugging at the start instead of depressing the shoulder blades.'
+    ],
+    heavy: 'If you cannot do 5 clean reps, use assistance and reduce it over the weeks. Bad pull-ups build nothing.'
+  },
+  dbrow: {
+    n: 'One-arm Dumbbell Row', g: 'Back', sets: 3, lo: 8, hi: 12, rest: 105, kind: 'comp-up',
+    inc: 2,
+    alt: 'Chest-supported machine row if your lower back is tired.',
+    feel: 'The lat of the working side, from the armpit down.',
+    cues: [
+      'One knee and one hand on a bench, the other foot planted on the floor.',
+      'Back flat and roughly parallel to the floor — not rounded, not upright.',
+      'Let the dumbbell hang and the shoulder blade spread at the bottom.',
+      'Pull the elbow up and back towards your hip, not out to the side.',
+      'Squeeze at the top, then lower over 2 seconds to a full stretch.'
+    ],
+    errs: [
+      'Twisting the torso to throw the weight up: your shoulders stay level.',
+      'Pulling to the armpit instead of the hip, which turns it into a rear-delt exercise.',
+      'Rounding the lower back at the bottom.'
+    ],
+    heavy: 'If your torso rotates to finish a rep, it is too heavy. One arm at a time makes cheating obvious.'
+  },
+  tbar: {
+    n: 'T-Bar Row', g: 'Mid back', sets: 3, lo: 8, hi: 12, rest: 120, kind: 'comp-up',
+    inc: 2.5,
+    alt: 'Chest-supported machine row.',
+    feel: 'Thick through the middle of the back, between the shoulder blades.',
+    cues: [
+      'Chest on the pad if the machine has one. It takes your lower back out of the equation.',
+      'Neutral grip, arms straight at the start, shoulder blades spread.',
+      'Start the pull by squeezing the blades together, then drive the elbows back.',
+      'Pause for a second at the top with the chest still on the pad.',
+      'Lower over 2–3 seconds to a full stretch.'
+    ],
+    errs: [
+      'Heaving the chest off the pad to move more weight.',
+      'Jerking with the lower back on a free-standing T-bar.',
+      'Half reps that never reach a stretch.'
+    ],
+    heavy: 'If your chest leaves the pad, take a plate off. That pad is the whole reason to pick this over a barbell row.'
+  },
+  pullover: {
+    n: 'Straight-arm Pulldown', g: 'Lats', sets: 3, lo: 12, hi: 15, rest: 75, kind: 'iso',
+    inc: 2.5,
+    alt: 'Dumbbell pullover on a bench.',
+    feel: 'A long stretch down the lats. The only lat exercise where the elbow does not bend.',
+    cues: [
+      'Stand a step back from a high pulley, hinge forward slightly at the hip.',
+      'Arms almost straight with a small fixed bend, and they STAY that way.',
+      'Pull the bar down in an arc to your thighs using only the shoulder.',
+      'Squeeze the lats for a second at the bottom.',
+      'Let the arms travel back up overhead until you feel the lats lengthen.'
+    ],
+    errs: [
+      'Bending the elbows: it becomes a triceps pushdown.',
+      'Standing too upright, which kills the stretch at the top.',
+      'Using the lower back to drive the bar down.'
+    ],
+    heavy: 'If your elbows bend or your back rounds, lower the weight. This one is about the stretch, never the number.'
+  },
+  facepull: {
+    n: 'Face Pull', g: 'Rear delts + mid back', sets: 3, lo: 15, hi: 20, rest: 60, kind: 'iso',
+    inc: 2.5,
+    alt: 'Rear-delt fly on the pec deck, or bent-over dumbbell reverse flyes.',
+    feel: 'The back of the shoulders and between the shoulder blades.',
+    cues: [
+      'Rope attachment set at about face height.',
+      'Pull the rope towards your forehead, splitting your hands apart as it arrives.',
+      'Finish with your knuckles beside your ears and your elbows high, like a double biceps pose.',
+      'Squeeze for a second, then return slowly with the arms fully extended.',
+      'Light weight and high reps. This is a posture exercise, not a strength one.'
+    ],
+    errs: [
+      'Too much weight, so it turns into a row at chest height.',
+      'Leaning back to drag the rope in.',
+      'Letting the elbows drop below the wrists.'
+    ],
+    heavy: 'If you lean back or the elbows drop, halve the weight. Face pulls protect the shoulder you press with — do not turn them into ego work.'
+  },
+
+  /* ---------------- extra ARMS ---------------- */
+  curlbar: {
+    n: 'EZ-bar Curl', g: 'Biceps', sets: 3, lo: 8, hi: 12, rest: 90, kind: 'iso',
+    inc: 2.5,
+    alt: 'Straight-bar curl, or dumbbell curls one arm at a time.',
+    feel: 'The whole biceps. The bent bar keeps the wrists comfortable.',
+    cues: [
+      'Grip the angled part of the bar, hands about shoulder width.',
+      'Elbows pinned to your sides and FIXED. Only the forearm moves.',
+      'Curl to just short of vertical, so the biceps keeps tension.',
+      'Lower over 2 seconds to full elbow extension.',
+      'Stand tall — no rocking backwards to start the rep.'
+    ],
+    errs: [
+      'Swinging the hips. If you have to, drop 5 kg.',
+      'Elbows drifting forward, which hands the work to the front delt.',
+      'Cutting the bottom short and never straightening the arm.'
+    ],
+    heavy: 'If your back leans away to get it moving, it is too heavy.'
+  },
+  cablecurl: {
+    n: 'Cable Curl', g: 'Biceps', sets: 3, lo: 10, hi: 15, rest: 75, kind: 'iso',
+    inc: 2.5,
+    alt: 'Dumbbell curls, though the tension is less even.',
+    feel: 'Constant tension, with no easy point at the top.',
+    cues: [
+      'Low pulley, bar or rope, standing a step back so the cable pulls slightly behind you.',
+      'Elbows at your sides and still.',
+      'Curl up, squeeze, and control the way down for 2 seconds.',
+      'Do not let the stack rest between reps — that is the reason to use a cable.'
+    ],
+    errs: [
+      'Standing too close, which kills the tension at the bottom.',
+      'Letting the weight stack touch down and resting mid-set.',
+      'Leaning back on the last reps.'
+    ],
+    heavy: 'If the stack clangs at the bottom of each rep, you are using momentum, not muscle.'
+  },
+  conc: {
+    n: 'Concentration Curl', g: 'Biceps', sets: 3, lo: 10, hi: 12, rest: 60, kind: 'iso',
+    inc: 1, uni: true,
+    alt: 'Preacher curl one arm at a time.',
+    feel: 'The peak of the biceps, more isolated than any other curl.',
+    cues: [
+      'Sit on a bench, feet wide, and brace the back of your upper arm against the inside of your thigh.',
+      'That thigh is the whole point: it makes the upper arm impossible to move.',
+      'Curl up slowly, turning the little finger slightly towards you at the top.',
+      'Squeeze for a second, then lower over 2–3 seconds to a full stretch.',
+      'All reps on one arm, then the other.'
+    ],
+    errs: [
+      'Letting the upper arm come off the thigh.',
+      'Leaning back to help the last reps.',
+      'Rushing the lowering, which is where most of the work is.'
+    ],
+    heavy: 'Go light. If you need your body to help, the isolation is gone and so is the point.'
+  },
+  skull: {
+    n: 'Skull Crusher', g: 'Triceps', sets: 3, lo: 8, hi: 12, rest: 90, kind: 'iso',
+    inc: 2.5,
+    alt: 'Overhead rope extension, which is kinder to the elbow.',
+    feel: 'The long head of the triceps, stretched hard behind the arm.',
+    cues: [
+      'Lie on a flat bench with an EZ bar, arms vertical over your shoulders.',
+      'Keep the upper arms STILL and slightly angled back over your head.',
+      'Bend only at the elbow, lowering the bar towards your forehead or just behind it.',
+      'Stop before the bar touches, then extend without locking hard at the top.',
+      'Slow on the way down: 2 seconds minimum.'
+    ],
+    errs: [
+      'Letting the upper arms swing back and forth, turning it into a pullover.',
+      'Going too heavy and dropping the bar towards your face. Use a spotter or start very light.',
+      'Locking the elbows aggressively at the top.'
+    ],
+    heavy: 'Any elbow pain means stop and switch to the overhead rope version. Elbows are slow to forgive this one.'
+  },
+  ohtri: {
+    n: 'Overhead Cable Extension', g: 'Triceps', sets: 3, lo: 10, hi: 15, rest: 75, kind: 'iso',
+    inc: 2.5,
+    alt: 'Overhead dumbbell extension with both hands on one bell.',
+    feel: 'A deep stretch down the back of the arm. The best triceps stretch there is.',
+    cues: [
+      'Rope on a low or mid pulley, turn away from the machine and step forward.',
+      'Rope behind your head, elbows pointing forward and high.',
+      'Extend the arms straight overhead, spreading the rope at the top.',
+      'Let the elbows bend fully behind your head for the stretch, without letting them flare out.',
+      'Upper arms stay beside your ears throughout.'
+    ],
+    errs: [
+      'Elbows flaring out to the sides.',
+      'Letting the upper arms drop, which shortens the stretch that makes this exercise worth doing.',
+      'Arching the lower back to press the weight up.'
+    ],
+    heavy: 'If your lower back arches or the elbows flare, drop a plate.'
+  },
+  dips: {
+    n: 'Bench Dip', g: 'Triceps', sets: 3, lo: 10, hi: 15, rest: 75, kind: 'iso',
+    inc: 0,
+    alt: 'Assisted dip machine leaning upright, or close-grip push-ups.',
+    feel: 'The back of the arms, with a stretch at the bottom.',
+    cues: [
+      'Hands on the edge of a bench behind you, fingers forward, heels on the floor.',
+      'Torso stays close to the bench the whole way down.',
+      'Lower until the elbows reach about 90° and no further.',
+      'Press back up through the heels of your hands.',
+      'Bend the knees to make it easier; straighten the legs or add a plate on your lap to make it harder.'
+    ],
+    errs: [
+      'Sinking too deep, which puts the shoulder in a bad place for nothing.',
+      'Drifting away from the bench so the shoulders take over.',
+      'Bouncing at the bottom.'
+    ],
+    heavy: 'If the front of your shoulder complains, reduce the depth first and the reps second.'
+  },
+
+  /* ---------------- extra LEGS ---------------- */
+  squat: {
+    n: 'Goblet Squat', g: 'Quads + glutes', sets: 3, lo: 8, hi: 12, rest: 120, kind: 'comp-lo',
+    inc: 2,
+    alt: 'Hack squat or leg press if balance is the limit.',
+    feel: 'Quads and glutes, with the core working hard to keep you upright.',
+    cues: [
+      'Hold one dumbbell vertically against your chest, elbows tucked in.',
+      'Feet a little wider than your shoulders, toes turned slightly out.',
+      'Sit DOWN between your hips, not back — the weight in front keeps you upright.',
+      'Go as deep as you can with a flat back, ideally thighs past parallel.',
+      'Drive up through the middle of the foot, knees tracking over the toes.'
+    ],
+    errs: [
+      'Heels lifting off the floor: your ankles need mobility work, or put small plates under them.',
+      'Knees caving inwards on the way up.',
+      'Rounding the lower back at the bottom, which is the point to stop going deeper.'
+    ],
+    heavy: 'The goblet squat self-limits: when you cannot hold the dumbbell up any more, that is your ceiling. Move to a hack squat rather than forcing it.'
+  },
+  hack: {
+    n: 'Hack Squat', g: 'Quads', sets: 3, lo: 8, hi: 12, rest: 150, kind: 'comp-lo',
+    inc: 5,
+    alt: 'Leg press, or a Smith machine squat.',
+    feel: 'Quads, harder than anything else in the gym can give them.',
+    cues: [
+      'Back and hips flat against the pad, shoulders under the shoulder pads.',
+      'Feet shoulder width, mid-platform. Higher feet means more glute, lower means more quad.',
+      'Release the safeties only once you are set and know how to put them back.',
+      'Lower over 2–3 seconds to roughly 90° of knee bend or a touch below.',
+      'Drive up without snapping the knees into lockout.'
+    ],
+    errs: [
+      'Letting the lower back peel off the pad at the bottom.',
+      'Knees caving inwards.',
+      'Bouncing out of the bottom instead of controlling it.'
+    ],
+    heavy: 'If your hips lift off the pad at the bottom, either go less deep or take weight off.'
+  },
+  lunge: {
+    n: 'Walking Lunge', g: 'Quads + glutes (single leg)', sets: 3, lo: 8, hi: 12, rest: 105, kind: 'comp-lo',
+    inc: 2, uni: true,
+    alt: 'Static lunges in place, or the Bulgarian split squat.',
+    feel: 'The quad and glute of the front leg, and your balance.',
+    cues: [
+      'Start with bodyweight only until you can walk ten steps without wobbling.',
+      'Step forward far enough that the front shin stays roughly vertical at the bottom.',
+      'Lower until the back knee is just above the floor.',
+      'Drive up through the FRONT heel and step straight through into the next rep.',
+      'Torso upright, dumbbells hanging at your sides.'
+    ],
+    errs: [
+      'Steps too short, which slams the knee forward over the toe.',
+      'Letting the back knee bang the floor.',
+      'Leaning the torso forward over the front leg.'
+    ],
+    heavy: 'If you are wobbling, it is too heavy. Balance is the limiting factor long before strength is.'
+  },
+  hipthrust: {
+    n: 'Hip Thrust', g: 'Glutes', sets: 3, lo: 10, hi: 15, rest: 120, kind: 'comp-lo',
+    inc: 5,
+    alt: 'Glute bridge on the floor, or the hip thrust machine.',
+    feel: 'Glutes, and almost nothing else. The best glute exercise there is.',
+    cues: [
+      'Upper back against the long edge of a bench, just under the shoulder blades.',
+      'Feet flat, shins vertical at the TOP of the movement — that is how you find foot placement.',
+      'Chin tucked, ribs down. Look forward, not up at the ceiling.',
+      'Drive through the heels until your body makes a straight line from knee to shoulder.',
+      'Squeeze the glutes hard for a full second at the top, then lower under control.'
+    ],
+    errs: [
+      'Arching the lower back at the top instead of finishing with the glutes — this is the main one.',
+      'Pushing through the toes.',
+      'Not locking out, so the glute never reaches full contraction.'
+    ],
+    heavy: 'Use a pad on the bar. If your lower back does the work at the top, drop the weight and squeeze harder.'
+  },
+  seatedcalf: {
+    n: 'Seated Calf Raise', g: 'Calves (soleus)', sets: 3, lo: 12, hi: 20, rest: 60, kind: 'iso',
+    inc: 5,
+    alt: 'Standing calf raise, though it trains a different part of the calf.',
+    feel: 'Deep and low in the calf, below where a standing raise hits.',
+    cues: [
+      'Knees bent at 90° under the pad, balls of the feet on the platform.',
+      'The bent knee is what makes this different: it targets the soleus, underneath the visible calf.',
+      'Drop the heels as far as they go and hold the stretch for a second.',
+      'Rise all the way onto the toes and squeeze for a second.',
+      'Slow throughout. The calf answers to time under tension, nothing else.'
+    ],
+    errs: [
+      'Fast partial bouncing, which is the reason most people have no calves.',
+      'Pad set too far up the thigh, over the knee joint.',
+      'Short range at either end.'
+    ],
+    heavy: 'If you cannot pause a full second at the top and the bottom, it is too heavy.'
+  },
 };
 
 /* ---------------- SESSIONS ---------------- */
@@ -805,5 +1191,25 @@ const START = {
   ohp:      { w: '6–8 kg per hand', why: 'Shoulder press is where you will move the least weight in the whole program. That is normal and means nothing bad.' },
   latpull2: { w: '25–30 kg (or 30–35 kg of assistance)', why: 'On assisted pull-ups the assistance is subtracted from your bodyweight: with 35 kg of help you are lifting about 29 kg. Aim for 8 clean reps.' },
   inchammer:{ w: '5–6 kg per hand', why: 'A kilo or two below a standing hammer curl. The stretch at the bottom makes it harder than it looks.' },
-  tripro2:  { w: '15–20 kg', why: 'Same as the pushdown in Upper A.' }
+  tripro2:  { w: '15–20 kg', why: 'Same as the pushdown in Upper A.' },
+  dbpress:   { w: '10–12 kg per hand', why: 'Dumbbells feel heavier than a barbell for the same total. Start below what you bench.' },
+  cablefly:  { w: '5–8 kg per side', why: 'A fly is never heavy. If the elbows bend, it is too much.' },
+  machfly:   { w: '15–20 kg', why: 'Enough to feel the squeeze, light enough to hold it a second.' },
+  dipchest:  { w: 'assistance set so you get 8 clean reps', why: 'More assistance means less of your bodyweight. Reduce it over the weeks.' },
+  pullup:    { w: 'assisted, set for 5–8 clean reps', why: 'Bad pull-ups build nothing. Earn the free ones.' },
+  dbrow:     { w: '12–16 kg', why: 'One arm at a time makes cheating obvious, so be honest here.' },
+  tbar:      { w: '20–25 kg plus the bar', why: 'Chest on the pad. If it leaves the pad, that is your limit.' },
+  pullover:  { w: '15–20 kg', why: 'Arms stay straight. The moment they bend, drop a plate.' },
+  facepull:  { w: '10–15 kg', why: 'Deliberately light. This protects the shoulder you press with.' },
+  curlbar:   { w: 'the empty EZ bar (7–10 kg)', why: 'Learn it without swinging, then add 2.5 kg at a time.' },
+  cablecurl: { w: '10–15 kg', why: 'Light enough that the stack never rests between reps.' },
+  conc:      { w: '5–7 kg', why: 'The most isolated curl there is, so the honest weight is small.' },
+  skull:     { w: 'the empty EZ bar (7–10 kg)', why: 'Start under what feels easy. Elbows are slow to forgive this one.' },
+  ohtri:     { w: '10–15 kg', why: 'Enough to feel the stretch behind the arm without arching your back.' },
+  dips:      { w: 'bodyweight, knees bent', why: 'Straighten the legs when 15 reps get easy.' },
+  squat:     { w: '10–14 kg', why: 'One dumbbell held at the chest. It limits itself, which is why it is safe to learn on.' },
+  hack:      { w: '20–40 kg plus the sled', why: 'The sled already weighs something. Start low and add fast.' },
+  lunge:     { w: 'bodyweight first', why: 'Ten steps without wobbling, then add dumbbells.' },
+  hipthrust: { w: '20–30 kg plus the bar, with a pad', why: 'Feel the glutes before you chase the number.' },
+  seatedcalf:{ w: '15–25 kg', why: 'With a one-second pause at each end. That pause is the exercise.' },
 };

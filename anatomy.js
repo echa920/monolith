@@ -66,7 +66,29 @@ const EX_MUS = {
   ohp:       { p: ['delt_f'], s: ['delt_s', 'triceps'] },
   latpull2:  { p: ['lat'], s: ['biceps', 'rhomboid'] },
   inchammer: { p: ['biceps', 'forearm'], s: [] },
-  tripro2:   { p: ['triceps'], s: [] }
+  tripro2:   { p: ['triceps'], s: [] },
+
+  /* --- the twenty added later --- */
+  dbpress:    { p: ['chest'], s: ['triceps', 'delt_f'] },
+  cablefly:   { p: ['chest'], s: ['delt_f'] },
+  machfly:    { p: ['chest'], s: ['delt_f'] },
+  dipchest:   { p: ['chest', 'triceps'], s: ['delt_f'] },
+  pullup:     { p: ['lat'], s: ['biceps', 'rhomboid', 'forearm'] },
+  dbrow:      { p: ['lat'], s: ['rhomboid', 'biceps', 'delt_r'] },
+  tbar:       { p: ['rhomboid', 'lat'], s: ['biceps', 'delt_r', 'erector'] },
+  pullover:   { p: ['lat'], s: ['triceps'] },
+  facepull:   { p: ['delt_r'], s: ['rhomboid', 'trap'] },
+  curlbar:    { p: ['biceps'], s: ['forearm'] },
+  cablecurl:  { p: ['biceps'], s: ['forearm'] },
+  conc:       { p: ['biceps'], s: [] },
+  skull:      { p: ['triceps'], s: [] },
+  ohtri:      { p: ['triceps'], s: [] },
+  dips:       { p: ['triceps'], s: ['chest', 'delt_f'] },
+  squat:      { p: ['quad', 'glute'], s: ['abs', 'adductor'] },
+  hack:       { p: ['quad'], s: ['glute', 'adductor'] },
+  lunge:      { p: ['quad', 'glute'], s: ['ham', 'adductor'] },
+  hipthrust:  { p: ['glute'], s: ['ham', 'erector'] },
+  seatedcalf: { p: ['calf'], s: [] }
 };
 
 /* ---------------- palette ----------------
@@ -95,7 +117,9 @@ const ENV_BOX = {
   sled:     [22, 50, 190, 154],
   step:     [66, 178, 144, 199],
   bench40:  [136, 146, 190, 193],
-  mat:      [20, 176, 180, 191]
+  mat:      [20, 176, 180, 191],
+  pullupbar:[38, 10, 172, 198],
+  benchside:[84, 192, 192, 242]
 };
 /* ---------------- body map drawing ---------------- */
 function musShapes(list, fill, stroke, op) {
@@ -331,6 +355,12 @@ function env(kind) {
     case 'bench40':return '<rect x="138" y="150" width="50" height="11" rx="5" fill="' + F + '"/>' +
                           '<rect x="151" y="161" width="9" height="30" fill="' + F + '"/>' + floor(191);
     case 'mat':    return '<rect x="22" y="180" width="156" height="9" rx="4" fill="' + F + '"/>';
+    case 'pullupbar': return '<rect x="40" y="26" width="130" height="12" rx="6" fill="' + F + '"/>' +
+                          '<rect x="44" y="12" width="10" height="20" fill="' + F + '"/>' +
+                          '<rect x="156" y="12" width="10" height="20" fill="' + F + '"/>' + floor(196);
+    case 'benchside': return '<rect x="86" y="196" width="104" height="12" rx="5" fill="' + F + '"/>' +
+                          '<rect x="98" y="208" width="9" height="30" fill="' + F + '"/>' +
+                          '<rect x="168" y="208" width="9" height="30" fill="' + F + '"/>' + floor(240);
     default: return '';
   }
 }
@@ -524,7 +554,128 @@ const EX_POSE = {
     base: { x: 100, y: 106, torso: 12, hip: 180, kne: 3, pulleyY: 12 },
     a: { sho: 168, elb: -88 }, b: { sho: 168, elb: -4 },
     ca: ['Elbows fixed at your sides, forearms up', 'Codos fijos al costado, antebrazos arriba'],
-    cb: ['Fully extended, hands spread apart at the bottom', 'Extensión completa, manos separadas abajo'] }
+    cb: ['Fully extended, hands spread apart at the bottom', 'Extensión completa, manos separadas abajo'] },
+
+  /* ---------------- the twenty added later ---------------- */
+  dbpress: { env: 'flat', grip: 'db',
+    base: { x: 108, y: 112, lean: -90, torso: 0, hip: 178, kne: 40 },
+    a: { sho: 92, elb: 0 }, b: { sho: 58, elb: 124 },
+    ca: ['Dumbbells locked out over the chest', 'Mancuernas arriba, sobre el pecho'],
+    cb: ['Elbows just below the torso — deeper than a barbell allows', 'Codos algo por debajo del torso: más profundo que con barra'] },
+
+  cablefly: { env: 'floor', grip: 'cable',
+    base: { x: 100, y: 106, torso: 14, hip: 180, kne: 3, pulleyY: 40, pulleyX: 176 },
+    a: { sho: 108, elb: -10 }, b: { sho: 158, elb: -12 },
+    ca: ['Arms wide, chest stretched, elbows at a fixed bend', 'Brazos abiertos, pecho estirado, codos con flexión fija'],
+    cb: ['Hands together in front of the sternum, squeeze', 'Manos juntas frente al esternón, aprieta'] },
+
+  machfly: { env: 'seat', grip: 'handle',
+    base: { x: 100, y: 130, torso: -2, hip: 96, kne: 66 },
+    a: { sho: 112, elb: -8 }, b: { sho: 150, elb: -10 },
+    ca: ['Handles out wide at chest height, back on the pad', 'Agarres abiertos a la altura del pecho, espalda apoyada'],
+    cb: ['Squeezed together and held for a second', 'Juntos y aguantados un segundo'] },
+
+  dipchest: { env: 'floor', grip: 'handle',
+    base: { x: 100, y: 112, torso: 26, hip: 168, kne: 44 },
+    a: { sho: 176, elb: 4 }, b: { sho: 150, elb: 86 },
+    ca: ['Arms straight, torso leaned forward about 30°', 'Brazos estirados, torso inclinado unos 30°'],
+    cb: ['Upper arms about parallel to the floor, no deeper', 'Brazos casi paralelos al suelo, no más abajo'] },
+
+  pullup: { env: 'pullupbar', grip: 'handle',
+    base: { x: 104, torso: 2, hip: 176, kne: 82 },
+    a: { y: 134, sho: 8, elb: 4 }, b: { y: 102, sho: 32, elb: 96 },
+    ca: ['Dead hang, arms straight, shoulders pulled down', 'Colgado, brazos rectos, hombros hacia abajo'],
+    cb: ['Chest to the bar, elbows driven down to your ribs', 'Pecho a la barra, codos hacia las costillas'] },
+
+  dbrow: { env: 'benchside', grip: 'db',
+    base: { x: 104, y: 112, torso: 78, hip: 178, kne: 16 },
+    a: { sho: 178, elb: 2 }, b: { sho: 214, elb: 96 },
+    ca: ['Back flat and parallel to the floor, weight hanging', 'Espalda plana y paralela al suelo, peso colgando'],
+    cb: ['Elbow driven up and back towards the hip', 'Codo arriba y atrás, hacia la cadera'] },
+
+  tbar: { env: 'seat', grip: 'handle',
+    base: { x: 96, y: 116, torso: 52, hip: 150, kne: 40 },
+    a: { sho: 186, elb: 2 }, b: { sho: 228, elb: 74 },
+    ca: ['Chest on the pad, arms straight, blades spread', 'Pecho en la almohadilla, brazos rectos, omóplatos separados'],
+    cb: ['Blades squeezed, elbows past the ribs, one-second pause', 'Omóplatos juntos, codos pasados de las costillas, pausa de 1 s'] },
+
+  pullover: { env: 'floor', grip: 'cable',
+    base: { x: 100, y: 108, torso: 26, hip: 178, kne: 8, pulleyY: 16 },
+    a: { sho: 30, elb: 4 }, b: { sho: 170, elb: 6 },
+    ca: ['Arms overhead and almost straight, lats lengthened', 'Brazos arriba y casi rectos, dorsales estirados'],
+    cb: ['Swept down to the thighs, elbows never bending', 'Bajados hasta los muslos, sin doblar nunca el codo'] },
+
+  facepull: { env: 'floor', grip: 'rope',
+    base: { x: 100, y: 106, torso: 6, hip: 180, kne: 3, pulleyY: 30 },
+    a: { sho: 46, elb: 8 }, b: { sho: 78, elb: 104 },
+    ca: ['Arms extended towards the pulley at face height', 'Brazos extendidos hacia la polea, a la altura de la cara'],
+    cb: ['Knuckles beside your ears, elbows high', 'Nudillos junto a las orejas, codos altos'] },
+
+  curlbar: { env: 'floor', grip: 'ez',
+    base: { x: 100, y: 106, torso: 2, hip: 180, kne: 2 },
+    a: { sho: 179, elb: 4 }, b: { sho: 179, elb: 130 },
+    ca: ['Standing tall, arms straight, elbows at your sides', 'De pie erguido, brazos rectos, codos al costado'],
+    cb: ['Curled to just short of vertical, elbows still', 'Hasta poco antes de la vertical, codos quietos'] },
+
+  cablecurl: { env: 'floor', grip: 'cable',
+    base: { x: 100, y: 106, torso: 3, hip: 180, kne: 2, pulleyY: 182, pulleyX: 172 },
+    a: { sho: 182, elb: 6 }, b: { sho: 182, elb: 128 },
+    ca: ['Arms straight, the stack already off its rest', 'Brazos rectos, con el peso ya despegado'],
+    cb: ['Curled and squeezed, tension never released', 'Arriba y apretado, sin soltar la tensión'] },
+
+  conc: { env: 'seat', grip: 'db',
+    base: { x: 100, y: 132, torso: 40, hip: 106, kne: 62 },
+    a: { sho: 186, elb: 6 }, b: { sho: 186, elb: 126 },
+    ca: ['Upper arm braced against the inside of the thigh', 'Brazo apoyado contra la cara interna del muslo'],
+    cb: ['Curled to the peak, little finger turned in', 'Arriba del todo, meñique girado hacia dentro'] },
+
+  skull: { env: 'flat', grip: 'ez',
+    base: { x: 108, y: 112, lean: -90, torso: 0, hip: 178, kne: 40 },
+    a: { sho: 86, elb: 4 }, b: { sho: 76, elb: 112 },
+    ca: ['Arms vertical, upper arms angled slightly back', 'Brazos verticales, con los codos algo hacia atrás'],
+    cb: ['Bent only at the elbow, bar towards the forehead', 'Solo flexiona el codo, barra hacia la frente'] },
+
+  ohtri: { env: 'floor', grip: 'rope',
+    base: { x: 100, y: 116, torso: 20, hip: 180, kne: 3, pulleyY: 172, pulleyX: 26 },
+    a: { sho: 40, elb: 112 }, b: { sho: 34, elb: 8 },
+    ca: ['Rope behind your head, elbows forward and high', 'Cuerda detrás de la cabeza, codos adelante y altos'],
+    cb: ['Extended straight overhead, rope spread apart', 'Extensión completa arriba, cuerda separada'] },
+
+  dips: { env: 'benchside', grip: 'none',
+    base: { x: 118, y: 140, torso: -8, hip: 96, kne: 78 },
+    a: { sho: 208, elb: 4 }, b: { sho: 202, elb: 84 },
+    ca: ['Arms straight, hands on the bench behind you', 'Brazos rectos, manos en el banco por detrás'],
+    cb: ['Elbows to about 90°, torso close to the bench', 'Codos a unos 90°, torso pegado al banco'] },
+
+  squat: { env: 'floor', grip: 'db',
+    base: { x: 100, torso: 8, sho: 150, elb: 78 },
+    a: { y: 102, hip: 178, kne: 6 }, b: { y: 128, hip: 142, kne: 84 },
+    ca: ['Standing tall, one dumbbell held at the chest', 'De pie erguido, una mancuerna contra el pecho'],
+    cb: ['Sat down between the hips, thighs past parallel', 'Sentado entre las caderas, muslos bajo la paralela'] },
+
+  hack: { env: 'sled', grip: 'none',
+    base: { x: 118, y: 126, lean: -58, torso: 0, sho: 150, elb: 40 },
+    a: { hip: 162, kne: -18 }, b: { hip: 124, kne: -84 },
+    ca: ['Knees almost extended, back flat on the pad', 'Rodillas casi estiradas, espalda plana en el respaldo'],
+    cb: ['About 90° of knee bend, hips still on the pad', 'Unos 90° de rodilla, cadera pegada al respaldo'] },
+
+  lunge: { env: 'floor', grip: 'db',
+    base: { x: 96, torso: 6, sho: 179, elb: 2 },
+    a: { y: 102, hip: 172, kne: 12 }, b: { y: 124, hip: 146, kne: 84 },
+    ca: ['Stepped forward, front shin vertical, torso upright', 'Paso adelante, espinilla vertical, torso erguido'],
+    cb: ['Back knee just above the floor, drive up through the front heel', 'Rodilla de atrás rozando el suelo, empuja con el talón delantero'] },
+
+  hipthrust: { env: 'benchside', grip: 'bar',
+    base: { x: 112, y: 138, torso: 68, sho: 150, elb: 40, kne: 96 },
+    a: { hip: 128 }, b: { hip: 92 },
+    ca: ['Hips down, upper back on the bench, shins vertical at the top', 'Cadera abajo, espalda alta en el banco, espinillas verticales arriba'],
+    cb: ['Locked out in a straight line from knee to shoulder, glutes squeezed', 'Bloqueado en línea recta de rodilla a hombro, glúteos apretados'] },
+
+  seatedcalf: { env: 'seat', grip: 'pad',
+    base: { x: 104, y: 128, torso: -4, sho: 168, elb: 30, hip: 96 },
+    a: { kne: 74 }, b: { kne: 96 },
+    ca: ['Heels dropped below the platform, full stretch', 'Talones por debajo de la plataforma, estiramiento completo'],
+    cb: ['Up on the toes, squeezed for a second', 'Arriba de puntillas, apretado un segundo'] }
 };
 
 /* ---------------- the block that goes in the app ---------------- */
