@@ -4,7 +4,7 @@
    temp folders get wiped between sessions and this kept getting lost. */
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const DIR = path.join(__dirname, '..');
-const FILES = ['data.js', 'lang.js', 'anatomy.js', 'ranks.js', 'exphoto.js',
+const FILES = ['data.js', 'lang.js', 'anatomy.js', 'bestiary.js', 'ranks.js', 'exphoto.js',
                'game.js', 'world.js', 'planner.js', 'coach.js', 'sync.js', 'app.js'];
 
 /* ---------------- DOM stub ---------------- */
@@ -211,6 +211,144 @@ const plan = ctx.plannerAnswer('give me a push day');
 ok(!!plan.plan && plan.plan.list.length >= 3, 'the planner understands "push day" and builds one');
 ok(plan.plan.list.every(id => EX_MUS[id.id].p.some(mm => PUSH_M.indexOf(mm) >= 0)), 'and it is genuinely push work');
 
+head('INTERFACE STRINGS');
+{
+const UI = ctx.$get('UI');
+const used = new Set();
+/* lang.js itself is skipped: its own doc comment says tr('key') */
+FILES.filter(f => f !== 'lang.js').forEach(f => {
+  const src = fs.readFileSync(path.join(DIR, f), 'utf8');
+  (src.match(/\btr\('[A-Za-z0-9_]+'\)/g) || []).forEach(m => used.add(m.slice(4, -2)));
+});
+const missEn = [...used].filter(k => UI.en[k] === undefined);
+const missEs = [...used].filter(k => UI.es[k] === undefined);
+ok(used.size >= 40, 'the source asks for ' + used.size + ' interface strings');
+ok(missEn.length === 0, 'every one of them exists in English' + (missEn.length ? ' — missing: ' + missEn.join(', ') : ''));
+ok(missEs.length === 0, 'and in Spanish' + (missEs.length ? ' — missing: ' + missEs.join(', ') : ''));
+/* a handful of words really are the same in both languages */
+const SAME_OK = ['tab_plan'];
+const same = Object.keys(UI.en).filter(k => UI.es[k] === UI.en[k] && !/^lang_/.test(k) &&
+  SAME_OK.indexOf(k) < 0 && String(UI.en[k]).length > 3);
+ok(same.length === 0, 'and none of them was left in English inside the Spanish dictionary' +
+   (same.length ? ' — ' + same.join(', ') : ''));
+}
+
+head('THE FORGE — COMBAT');
+{
+const C = boot(makeSeed(['PUSH','PULL','LEGS']));
+const SC = C.$get('S'), ATTACKS = C.$get('ATTACKS'), MOBS = C.$get('MOBS'), BOSSES = C.$get('BOSSES');
+const BEAST = C.$get('BEAST'), g2 = C.computeGame(), R = C.rpg();
+
+/* ---- every creature in the world has a face ---- */
+const allFoes = Object.keys(MOBS).concat(Object.keys(BOSSES));
+const noArt = allFoes.filter(k => !BEAST[k]);
+ok(noArt.length === 0, 'all ' + allFoes.length + ' creatures have a drawing' + (noArt.length ? ' — missing: ' + noArt.join(', ') : ''));
+const guards = Object.keys(C.$get('DUNGEONS')).map(d => C.$get('DUNGEONS')[d].guard);
+ok(guards.every(gu => gu.ak && BEAST[gu.ak]), 'and so does every dungeon guardian');
+const bad = allFoes.filter(k => {
+  const svg = C.creatureArt(Object.assign({}, MOBS[k] || BOSSES[k]), 112);
+  return !/^<svg /.test(svg) || svg.length < 400 || /NaN|undefined/.test(svg);
+});
+ok(bad.length === 0, 'every drawing is real SVG with no NaN in it' + (bad.length ? ' — broken: ' + bad.join(', ') : ''));
+ok(/<svg /.test(C.heroArt(104)) && !/NaN/.test(C.heroArt(104)), 'and so do you');
+/* a creature with no art key still gets a body rather than an empty box */
+const orphan = C.creatureArt({ n: 'Something New', t: 'beast', hp: 10, atk: 5, def: 1 }, 90);
+ok(/<svg /.test(orphan) && orphan.length > 400, 'a creature with no art key still gets a body');
+
+/* ---- uses: the stronger the move, the fewer of them ---- */
+const pows = Object.keys(ATTACKS).filter(k => ATTACKS[k].kind === 'dmg').map(k => ({ k: k, pow: ATTACKS[k].pow, pp: C.movePP(k) }));
+const sorted = pows.slice().sort((a, b) => a.pow - b.pow);
+let monotone = true;
+for (let i = 1; i < sorted.length; i++) if (sorted[i].pp > sorted[i - 1].pp) monotone = false;
+ok(monotone, 'uses never go up as power goes up — ' +
+   sorted.map(x => x.pow + 'pow/' + x.pp).join(' '));
+ok(C.movePP('bench_strike') === 20 && C.movePP('judgement') === 9 && C.movePP('anvil_drop') === 8,
+   'the weakest move gets 20 uses, the heaviest 8');
+ok(C.movePP('resolve') === 4 && C.movePP('roar') === 3, 'and the support moves are capped by hand, not by the formula');
+ok(Object.keys(ATTACKS).every(k => C.movePP(k) >= 3), 'nothing is so strong it gets fewer than 3');
+
+/* ---- spending them ---- */
+R.moves = ['bench_strike', 'lat_pull'];
+ok(C.ppLeft('bench_strike') === 20, 'an untouched move starts full');
+C.ppSpend('bench_strike');
+ok(C.ppLeft('bench_strike') === 19, 'using it costs one');
+for (let i = 0; i < 25; i++) C.ppSpend('bench_strike');
+ok(C.ppLeft('bench_strike') === 0, 'and it bottoms out at zero rather than going negative');
+ok(!C.ppDry(C.computeGame()), 'with one move still loaded you are not dry');
+C.rpg().moves.forEach(m => { for (let i = 0; i < 30; i++) C.ppSpend(m); });
+ok(C.ppDry(C.computeGame()), 'empty every move and you are');
+ok(C.moveById('bare').pow === 12 && C.ppLeft('bare') > 0, 'bare hands are always there, and always weak');
+
+/* ---- speed decides who connects ---- */
+ok(C.foeVel({ atk: 10 }) < C.foeVel({ atk: 40 }), 'an angrier creature is a faster one');
+ok(C.foeVel({ atk: 40, vel: 5 }) === 5, 'unless it says otherwise');
+ok(C.hitChance(95, 40, 10) > C.hitChance(95, 10, 40), 'being faster makes you land more');
+ok(C.hitChance(95, 999, 0) <= 99 && C.hitChance(50, 0, 999) >= 45, 'but nothing ever always lands or always misses');
+ok(C.critChance(5, 60, 10) > C.critChance(5, 10, 60), 'and speed buys crits too');
+ok(C.moveAcc(ATTACKS.anvil_drop) < C.moveAcc(ATTACKS.bench_strike), 'the heaviest move is also the least reliable');
+
+/* ---- a whole fight, start to finish ---- */
+C.rpg().pp = {}; C.rpg().hp = null;
+const spent0 = C.rpg().spent;
+C.startBattle(Object.assign({}, MOBS.slag), { mobId: 'slag', cost: 1, repeat: true });
+const Bf = C.$get('B');
+ok(!!Bf && Bf.fhp === MOBS.slag.hp, 'a fight starts with the creature at full health');
+ok(C.rpg().spent === spent0 + 1, 'and it cost one energy');
+ok(Bf.vel === Bf.hs.vel && Bf.fvel > 0, 'both sides brought a speed');
+const pp0 = C.ppLeft('bench_strike');
+C.rpg().moves = ['bench_strike'];
+C.heroAct('bench_strike');
+ok(C.ppLeft('bench_strike') === pp0 - 1, 'swinging spends a use whether or not it lands');
+await sleep(60);
+/* fight it to the end on a fast clock */
+let guard2 = 0;
+while (C.$get('B') && !C.$get('B').over && guard2++ < 400) {
+  const BB = C.$get('B');
+  if (!BB.busy) C.heroAct('bench_strike');
+  await sleep(4);
+}
+const Bend = C.$get('B');
+ok(!!Bend && Bend.over, 'the fight ends by itself');
+ok(Bend.hp < Bend.max || Bend.result.win, 'and it cost you something, or you won clean');
+ok(C.rpg().hp === Math.max(0, Bend.hp), 'the health you walk out with is the health that gets saved');
+
+/* ---- the tavern is the only way back ---- */
+const hsT = C.heroStats(C.computeGame());
+C.rpg().hp = 3; C.rpg().pp = { bench_strike: 0 }; C.rpg().restedAt = 999;
+ok(C.heroHP(hsT) === 3, 'a wounded hero stays wounded between fights');
+ok(!C.restFree(C.computeGame()), 'with no new session closed, resting is not free');
+const en0 = C.energy(C.computeGame());
+C.doRest(C.computeGame());
+ok(C.heroHP(C.heroStats(C.computeGame())) === hsT.hp, 'resting gives all the health back');
+ok(C.ppLeft('bench_strike') === C.movePP('bench_strike'), 'and every move its uses');
+ok(C.energy(C.computeGame()) === en0 - 1, 'and it cost exactly one energy');
+C.rpg().hp = 5; C.rpg().restedAt = 0;
+const en1 = C.energy(C.computeGame());
+ok(C.restFree(C.computeGame()), 'close a session and the next rest is free');
+C.doRest(C.computeGame());
+ok(C.energy(C.computeGame()) === en1, 'a free rest costs nothing');
+ok(C.rpg().restedAt === C.computeGame().sessions, 'and it is only free once');
+
+/* ---- at zero you cannot fight, which is the point ---- */
+C.rpg().hp = 0;
+const spent1 = C.rpg().spent;
+C.startBattle(Object.assign({}, MOBS.slag), { mobId: 'slag', cost: 1 });
+ok(C.rpg().spent === spent1, 'at zero health a fight does not even start, so no energy is burned');
+
+/* ---- max HP moving must not make a wounded hero immortal ---- */
+C.rpg().hp = 10000;
+ok(C.heroHP(C.heroStats(C.computeGame())) === C.heroStats(C.computeGame()).hp,
+   'stored health is clamped to the max you currently have');
+
+/* ---- and the screen still draws ---- */
+C.rpg().hp = null;
+try { C.startBattle(Object.assign({}, BOSSES.b1), { boss: 'b1', cost: 3 }); C.drawBattle(); C.updateBattle();
+  console.log('OK  the battle screen builds and updates'); }
+catch (err) { fails++; console.log('FAIL battle screen: ' + err.message + '\n  ' + err.stack.split('\n')[1]); }
+try { C.openTavern(); console.log('OK  the tavern opens'); }
+catch (err) { fails++; console.log('FAIL tavern: ' + err.message); }
+}
+
 head('SYNC BETWEEN DEVICES');
 /* the merge is the dangerous part: a bad one silently deletes a workout */
 const A = boot(makeSeed(['PUSH','PULL','LEGS']));
@@ -319,10 +457,13 @@ ok(JSON.stringify(ctx.syncPayload()).indexOf('zoomLock') >= 0, 'and it travels w
 S.prefs.zoomLock = false;
 
 head('LANGUAGE');
-const T = ['EX','SESSIONS','WARMUP','START','GUIDE','BLOCKS','JAW','JAW_TRUTH','MEASURES','NO_KIT','POSES','MARKS','POST'];
+/* the ones lang.js registers itself, then the ones world.js registers late */
+const T = ['EX','SESSIONS','WARMUP','START','GUIDE','BLOCKS','JAW','JAW_TRUTH','MEASURES','NO_KIT','POSES','MARKS','POST',
+          'TYPES','ATTACKS','ITEMS','SLOT_NAMES'];
 const snapEN = {}; T.forEach(k => snapEN[k] = JSON.stringify(ctx.$get(k)));
 ok(ctx.$get('LANG') === 'en' && EX.bench.n === 'Barbell Bench Press', 'boots in English');
-ok(Object.keys(ctx.$get('I18N_TARGETS')).length === T.length,
+const REG = Object.keys(ctx.$get('I18N_TARGETS'));
+ok(T.every(k => REG.indexOf(k) >= 0) && REG.length === T.length,
    'all ' + T.length + ' data structures are registered for translation');
 
 ctx.setLang('es');
@@ -347,6 +488,17 @@ ok(ctx.$get('BLOCKS')[0].rirN === 3 && /Adaptación/.test(ctx.$get('BLOCKS')[0].
    'blocks translate their name but keep the numbers that drive the programme');
 ok(ctx.$get('MARKS')[0].c === '#C8FF00', 'symmetry marks keep their colours');
 ok(EX.pullup.n === 'Dominada' && EX.hipthrust.n.indexOf('Cadera') >= 0, 'the new exercises are translated too');
+/* the forge: the words you read while deciding what to press */
+ok(ctx.$get('TYPES').iron.n === 'Hierro' && ctx.$get('TYPES').iron.c === '#9FB3C8',
+   'attack types translate their name and keep their colour');
+const ATK = ctx.$get('ATTACKS');
+ok(ATK.bench_strike.n === 'Golpe de Banca' && typeof ATK.bench_strike.u === 'function',
+   'attacks translate without losing the rule that unlocks them');
+ok(Object.keys(ATK).every(k => typeof ATK[k].u === 'function'), 'every single one of them');
+ok(Object.keys(ATK).every(k => /[áéíóúñ¿¡]/.test(ATK[k].n + ATK[k].d) || ATK[k].n !== ctx.$get('EN_SNAP').ATTACKS[k].n),
+   'and every one actually reads as Spanish');
+ok(ctx.$get('ITEMS').shake.n === 'Batido de Proteína' && ctx.$get('ITEMS').shake.heal === 45,
+   'gear translates its name and keeps what it does');
 const enEX = JSON.parse(snapEN.EX);
 const sameCues = Object.keys(EX).filter(id => EX[id].cues.join('') === enEX[id].cues.join(''));
 ok(sameCues.length === 0, 'all ' + Object.keys(EX).length + ' exercises have Spanish cues' +

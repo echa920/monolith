@@ -24,54 +24,69 @@ function typeMult(a, d) {
 function multTxt(m) { return m > 1 ? "It's super effective!" : (m < 1 ? "It's not very effective..." : ''); }
 
 /* ---------------- attacks ----------------
-   Every attack unlocks from a REAL gym milestone. */
+   Every attack unlocks from a REAL gym milestone.
+
+   Three numbers decide what a move is worth:
+     pow  how hard it hits
+     acc  how often it connects, before speed is taken into account
+     pp   how many times you may use it before the tavern
+
+   pp is derived from pow by movePP() — hard hitters get fewer uses, which is
+   the whole point — and only written out here where the formula would be
+   wrong, which is the three support moves: a heal worth fourteen casts is not
+   a decision, it is a button. */
 const ATTACKS = {
-  bench_strike: { n: 'Bench Strike', t: 'iron', pow: 35, kind: 'dmg',
-    d: 'A short, flat drive. The first move every apprentice learns.',
+  bench_strike: { n: 'Bench Strike', t: 'iron', pow: 35, kind: 'dmg', acc: 98,
+    d: 'A short, flat drive. The first move every apprentice learns, and the one that never runs dry.',
     u: () => true, ut: 'Available from the start' },
-  lat_pull: { n: 'Lat Drag', t: 'beast', pow: 42, kind: 'dmg',
+  lat_pull: { n: 'Lat Drag', t: 'beast', pow: 42, kind: 'dmg', acc: 96,
     d: 'You drag the enemy in with your elbows, not your hands.',
     u: g => bestAt('latpull', 8) >= 35, ut: 'Lat pulldown: 35 kg × 8' },
-  hinge: { n: 'Iron Hinge', t: 'stone', pow: 48, kind: 'dmg',
+  hinge: { n: 'Iron Hinge', t: 'stone', pow: 48, kind: 'dmg', acc: 95,
     d: 'The hips snap forward like a bolt. Unflashy, devastating.',
     u: g => bestAt('rdl', 10) >= 20, ut: 'Romanian deadlift: 20 kg × 10' },
-  side_edge: { n: 'Side Edge', t: 'spirit', pow: 40, kind: 'dmg', crit: 25,
-    d: 'Two clean cuts out from the shoulders. High crit chance.',
+  side_edge: { n: 'Side Edge', t: 'spirit', pow: 40, kind: 'dmg', crit: 25, acc: 97,
+    d: 'Two clean cuts out from the shoulders. Lands often and crits often.',
     u: g => bestAt('latraise', 12) >= 6 || g.vRatio >= 1.3, ut: 'Lateral raise: 6 kg × 12' },
-  quake: { n: 'Seismic Press', t: 'stone', pow: 62, kind: 'dmg',
+  quake: { n: 'Seismic Press', t: 'stone', pow: 62, kind: 'dmg', acc: 92,
     d: 'You push the floor until the floor gives.',
     u: g => bestAt('legpress', 10) >= 100, ut: 'Leg press: 100 kg × 10' },
-  ham_claw: { n: 'Hamstring Claw', t: 'beast', pow: 52, kind: 'dmg',
+  ham_claw: { n: 'Hamstring Claw', t: 'beast', pow: 52, kind: 'dmg', acc: 94,
     d: 'A scissor strike from behind. Nobody sees the hamstrings coming.',
     u: g => bestAt('legcurl', 10) >= 25, ut: 'Leg curl: 25 kg × 10' },
-  hammer: { n: 'Neutral Hammer', t: 'iron', pow: 50, kind: 'dmg',
+  hammer: { n: 'Neutral Hammer', t: 'iron', pow: 50, kind: 'dmg', acc: 95,
     d: 'Hammer grip, hammer impact.',
     u: g => bestAt('inchammer', 10) >= 8, ut: 'Incline hammer curl: 8 kg × 10' },
-  rep_chain: { n: 'Rep Chain', t: 'beast', pow: 16, kind: 'multi',
+  rep_chain: { n: 'Rep Chain', t: 'beast', pow: 16, kind: 'multi', acc: 93,
     d: 'Hits 2 to 4 times. Volume is damage too.',
     u: g => g.sessions >= 10, ut: '10 sessions closed' },
-  titan_push: { n: 'Titan Push', t: 'iron', pow: 70, kind: 'dmg',
-    d: 'Three quarters of your bodyweight turned into one shove.',
+  titan_push: { n: 'Titan Push', t: 'iron', pow: 70, kind: 'dmg', acc: 90,
+    d: 'Three quarters of your bodyweight turned into one shove. Slow enough that a fast enemy can step out of it.',
     u: g => bestAt('bench', 8) >= g.bw * 0.75, ut: 'Bench press: 0.75 × bodyweight × 8' },
-  resolve: { n: 'Unbroken Resolve', t: 'shadow', pow: 0, kind: 'heal', heal: 45,
-    d: 'Restore 45% of your HP. Not earned by fighting — earned by not missing.',
+  resolve: { n: 'Unbroken Resolve', t: 'shadow', pow: 0, kind: 'heal', heal: 45, pp: 4,
+    d: 'Restore 45% of your HP. Four times between rests — not earned by fighting, earned by not missing.',
     u: g => g.streak >= 6, ut: '6-session streak' },
-  roar: { n: 'Forge Roar', t: 'shadow', pow: 0, kind: 'buffA',
+  roar: { n: 'Forge Roar', t: 'shadow', pow: 0, kind: 'buffA', pp: 3,
     d: 'Raises your Attack by 35% for the rest of the fight.',
     u: g => g.sessions >= 15, ut: '15 sessions closed' },
-  stance: { n: 'Steel Stance', t: 'stone', pow: 0, kind: 'buffD',
+  stance: { n: 'Steel Stance', t: 'stone', pow: 0, kind: 'buffD', pp: 3,
     d: 'Raises your Defense by 45% for the rest of the fight. Technique is armour.',
     u: g => g.fullChk >= 5, ut: 'After-workout list finished on 5 sessions' },
-  mirror: { n: 'Mirror Cut', t: 'spirit', pow: 58, kind: 'dmg', crit: 20,
+  mirror: { n: 'Mirror Cut', t: 'spirit', pow: 58, kind: 'dmg', crit: 20, acc: 94,
     d: 'Only mastered by someone who truly measures themselves.',
     u: g => g.analyzed >= 3, ut: 'Analyse 3 photos in Symmetry' },
-  anvil_drop: { n: 'Anvil Drop', t: 'iron', pow: 95, kind: 'charge',
-    d: 'Charges one turn, lands the next. Devastating if you can take the hit.',
+  anvil_drop: { n: 'Anvil Drop', t: 'iron', pow: 95, kind: 'charge', acc: 82,
+    d: 'Charges one turn, lands the next. Devastating if you can take the hit — and it misses more than anything else you own.',
     u: g => bestAt('bench', 8) >= g.bw, ut: 'Bench press: your bodyweight × 8' },
-  judgement: { n: 'Forge Judgement', t: 'spirit', pow: 85, kind: 'dmg', crit: 15,
+  judgement: { n: 'Forge Judgement', t: 'spirit', pow: 85, kind: 'dmg', crit: 15, acc: 88,
     d: 'The strike only available to someone who genuinely changed.',
     u: g => g.level >= 20, ut: 'Adventurer level 20' }
 };
+
+/* What is left when every attack is empty. It is deliberately pathetic: it
+   stops you being locked out of a fight, and it is never worth choosing. */
+const BARE = { n: 'Bare Hands', t: 'iron', pow: 12, kind: 'dmg', acc: 100, bare: true,
+  d: 'What is left when everything else is empty.' };
 
 /* ---------------- gear ---------------- */
 const ITEMS = {
@@ -133,19 +148,24 @@ const MOBS = {
 
 /* region bosses */
 const BOSSES = {
-  b1: { n: 'The Quarry Foreman', t: 'stone', hp: 215, atk: 10, def: 8, gold: 90, item: 'rusty_bar',
+  b1: { n: 'The Quarry Foreman', t: 'stone', hp: 215, atk: 10, def: 8, vel: 9, gold: 90, item: 'rusty_bar',
     lore: 'He looks you up and down and laughs: "another one who lasts three weeks". Shut him up with one clean set.' },
-  b2: { n: 'Alced, Who Never Came Back', t: 'shadow', hp: 310, atk: 11, def: 14, gold: 260, item: 'wraps',
+  b2: { n: 'Alced, Who Never Came Back', t: 'shadow', hp: 310, atk: 11, def: 14, vel: 20, gold: 260, item: 'wraps',
     lore: 'He trained for two months, four years ago. He still lives off that story. The most common ghost there is.' },
-  b3: { n: 'Veinarch, Lady of Salt', t: 'iron', hp: 400, atk: 13, def: 20, gold: 600, item: 'oly_bar',
+  b3: { n: 'Veinarch, Lady of Salt', t: 'iron', hp: 400, atk: 13, def: 20, vel: 14, gold: 600, item: 'oly_bar',
     lore: 'Crystallised from the inside by repeating the same thing without ever changing it. Only real progression breaks her.' },
-  b4: { n: 'The Crowned Quitter', t: 'shadow', hp: 590, atk: 20, def: 28, gold: 1200, item: 'belt',
+  b4: { n: 'The Crowned Quitter', t: 'shadow', hp: 590, atk: 20, def: 28, vel: 30, gold: 1200, item: 'belt',
     lore: 'The version of you that gave up. It wears your face and your voice, and it knows every one of your excuses by heart.' },
-  b5: { n: 'Ferro, Warden of the Citadel', t: 'iron', hp: 850, atk: 29, def: 38, gold: 2600, item: 'anvil',
+  b5: { n: 'Ferro, Warden of the Citadel', t: 'iron', hp: 850, atk: 29, def: 38, vel: 26, gold: 2600, item: 'anvil',
     lore: 'He hates nobody. He simply does not let through anyone who has not earned the passage.' },
-  b6: { n: 'THE ANVIL', t: 'stone', hp: 1650, atk: 43, def: 52, gold: 7000, item: 'forge_ham',
+  b6: { n: 'THE ANVIL', t: 'stone', hp: 1650, atk: 43, def: 52, vel: 18, gold: 7000, item: 'forge_ham',
     lore: 'Not a monster. The surface you hammered yourself against for years until you took shape. Beating it means accepting you are no longer the person who started.' }
 };
+
+/* Each creature carries the key to its own drawing, because by the time a
+   battle is running all the code has is a copy of the creature. */
+Object.keys(MOBS).forEach(k => MOBS[k].ak = k);
+Object.keys(BOSSES).forEach(k => BOSSES[k].ak = k);
 
 /* ---------------- regions ---------------- */
 const REGIONS = [
@@ -173,23 +193,23 @@ const REGIONS = [
    These do not open with level. They open with real behaviour. */
 const DUNGEONS = {
   d1: { n: 'The Deep Vein', floors: [['veinworm', 'pebble'], ['veinworm', 'slag'], ['veinworm', 'veinworm']],
-    guard: { n: 'Grub Mother', t: 'stone', hp: 340, atk: 12, def: 14, gold: 220 }, item: 'timer',
+    guard: { n: 'Grub Mother', t: 'stone', hp: 340, atk: 12, def: 14, vel: 12, gold: 220, ak: 'grubmother' }, item: 'timer',
     cond: g => g.sessions >= 10, ct: 'Close 10 sessions to find the entrance',
     lore: 'A crack under the quarries you can only see once you have walked past the same spot enough times. Consistency opens doors that strength cannot.' },
   d2: { n: 'The Mirror Sanctum', floors: [['warped', 'echo'], ['warped', 'warped'], ['warped', 'vulture']],
-    guard: { n: 'Your Own Reflection', t: 'spirit', hp: 480, atk: 15, def: 18, gold: 460 }, item: 'eye',
+    guard: { n: 'Your Own Reflection', t: 'spirit', hp: 480, atk: 15, def: 18, vel: 28, gold: 460, ak: 'reflection' }, item: 'eye',
     cond: g => g.analyzed >= 3, ct: 'Analyse 3 photos in Symmetry for the sanctum to appear',
     lore: 'A temple of polished surfaces where everything you see is a version of you. Only those willing to measure themselves honestly can enter.' },
   d3: { n: 'The Sleepless Crypt', floors: [['sleepless', 'husk'], ['sleepless', 'sleepless'], ['sleepless', 'chimera']],
-    guard: { n: 'Warden of Hours', t: 'shadow', hp: 700, atk: 21, def: 24, gold: 900 }, item: 'amulet',
+    guard: { n: 'Warden of Hours', t: 'shadow', hp: 700, atk: 21, def: 24, vel: 34, gold: 900, ak: 'wardenhours' }, item: 'amulet',
     cond: g => g.fullChk >= 5, ct: 'Finish the after-workout list on 5 sessions',
     lore: 'It opens only for those who sleep and eat well. Inside there are no traps: only the exact consequences of your last five weeks.' },
   d4: { n: 'The Lost Forge', floors: [['ember', 'dune'], ['ember', 'ember'], ['ember', 'plateguard']],
-    guard: { n: 'Lesser Anvil', t: 'iron', hp: 1000, atk: 27, def: 34, gold: 1700 }, item: 'plate_mail',
+    guard: { n: 'Lesser Anvil', t: 'iron', hp: 1000, atk: 27, def: 34, vel: 15, gold: 1700, ak: 'lesseranvil' }, item: 'plate_mail',
     cond: g => g.progExercises >= 8, ct: 'Earn a weight increase on 8 different exercises',
     lore: 'The original forge, cold for centuries. It relights itself when somebody proves they understand progression.' },
   d5: { n: 'The Ossuary of Time', floors: [['bones', 'egojudge'], ['bones', 'bones'], ['bones', 'ancient']],
-    guard: { n: 'Chronos of the Forge', t: 'shadow', hp: 1500, atk: 36, def: 44, gold: 4500 }, item: 'hourglass',
+    guard: { n: 'Chronos of the Forge', t: 'shadow', hp: 1500, atk: 36, def: 44, vel: 40, gold: 4500, ak: 'chronos' }, item: 'hourglass',
     cond: g => g.sessions >= 50, ct: 'Close 50 sessions',
     lore: 'The bones of everyone who started and did not continue. There are many. Walking among them is how you understand why getting here already makes you different.' }
 };
@@ -204,20 +224,88 @@ const SHOP = [
   { id: 'aegis', price: 12000 }
 ];
 
+/* The nouns of this file translate like everything else. They are registered
+   here rather than in lang.js because lang.js loads first and cannot see them. */
+if (typeof i18nLate === 'function') {
+  i18nLate('TYPES', TYPES);
+  i18nLate('ATTACKS', ATTACKS);
+  i18nLate('ITEMS', ITEMS);
+  i18nLate('SLOT_NAMES', SLOT_NAMES);
+}
+
 /* ---------------- state ---------------- */
 let curRegion = 0;
 let questTab = 'map';
 
 function rpg() {
   if (!S.rpg) S.rpg = { spent: 0, gold: 0, items: {}, eq: { weapon: null, armor: null, charm: null },
-                        moves: [], bosses: [], dungeons: {}, seen: [], kills: {}, tut: false };
+                        moves: [], bosses: [], dungeons: {}, seen: [], kills: {}, tut: false,
+                        pp: {}, hp: null, restedAt: null };
   const r = S.rpg;
   r.items = r.items || {};
   r.eq = r.eq || { weapon: null, armor: null, charm: null };
   r.moves = r.moves || []; r.bosses = r.bosses || []; r.dungeons = r.dungeons || {};
   r.kills = r.kills || {}; r.seen = r.seen || [];
+  /* Uses and health survive a fight, which is what gives the tavern a job.
+     An absent entry means full, so an old save walks in at full strength and a
+     move unlocked tomorrow arrives with all of its uses. */
+  r.pp = r.pp || {};
+  if (r.hp === undefined) r.hp = null;
+  if (r.restedAt === undefined) r.restedAt = null;
   if (r.gold == null) r.gold = 0;
   return r;
+}
+
+/* ---------------- uses, the Pokémon rule ----------------
+   The harder a move hits, the fewer times you may use it. Uses do not come
+   back when the fight ends: they come back at the tavern, the tavern costs
+   energy, and energy only comes from training. That chain is the whole design
+   of this app in one resource. */
+function moveById(id) { return id === 'bare' ? BARE : ATTACKS[id]; }
+/* what a move actually puts out in one turn — the chain's three average hits
+   count, not its 16 per hit */
+function movePow(a) { return a.kind === 'multi' ? a.pow * 3 : a.pow; }
+function movePP(id) {
+  const a = moveById(id);
+  if (!a) return 0;
+  if (a.pp != null) return a.pp;
+  return clamp(Math.round(760 / Math.max(10, movePow(a))), 3, 20);
+}
+function moveAcc(a) { return a.acc != null ? a.acc : 95; }
+function ppLeft(id) {
+  if (id === 'bare') return 99;
+  const v = rpg().pp[id];
+  return v == null ? movePP(id) : clamp(v, 0, movePP(id));
+}
+function ppSpend(id) {
+  if (id === 'bare') return;
+  const r = rpg(); r.pp[id] = Math.max(0, ppLeft(id) - 1); save();
+}
+function ppRestore() { rpg().pp = {}; }   /* absent means full, so emptying the map refills everything */
+function ppDry(g) { return !activeMoves(g).some(id => ppLeft(id) > 0); }
+
+/* ---------------- speed ----------------
+   Every creature has one. Most inherit it from how aggressive they are: a
+   thing that hits hard and often is a thing that moves. */
+function foeVel(f) { return f.vel != null ? f.vel : Math.round(6 + (f.atk || 10) * 0.7); }
+/* Agility decides who connects. The gap between two speeds moves the roll but
+   never off the end of it — nothing ever lands for certain, nothing is ever
+   impossible, and a charm that buys you speed is worth wearing. */
+function hitChance(acc, fast, slow) { return clamp(acc + (fast - slow) * 0.7, 45, 99); }
+function critChance(base, fast, slow) { return clamp(base + (fast - slow) * 0.3, 1, 55); }
+
+/* ---------------- health between fights ----------------
+   Max HP moves as you train and swap gear, so what is stored is the current
+   number, clamped on the way out. */
+function heroHP(hs) { const r = rpg(); return r.hp == null ? hs.hp : clamp(r.hp, 0, hs.hp); }
+function heroHurt(g) { const hs = heroStats(g); return heroHP(hs) < hs.hp || ppDry(g); }
+/* One rest is free after every session you close: training is rest. */
+function restFree(g) { const r = rpg(); return r.restedAt == null || g.sessions > r.restedAt; }
+function doRest(g) {
+  const r = rpg(), hs = heroStats(g);
+  if (!restFree(g)) r.spent += 1;
+  r.hp = hs.hp; ppRestore(); r.restedAt = g.sessions;
+  save();
 }
 /* Energy in one place, with its whole story attached, so the number is
    never shown without the player being able to see where it came from. */
@@ -251,6 +339,7 @@ function energyCard(g) {
       '<div><span>Fight a region boss</span><b class="neg">&minus;3</b></div>' +
       '<div><span>One dungeon floor</span><b class="neg">&minus;2</b></div>' +
       '<div><span>A dungeon guardian</span><b class="neg">&minus;4</b></div>' +
+      '<div><span>' + tr('w_ledger_rest') + '</span><b class="neg">&minus;1</b></div>' +
     '</div>' +
     '<div class="tiny" style="margin-top:11px">Earned <b style="color:var(--tx)">' + e.earned + '</b> in total &mdash; ' +
       e.fromSets + ' from sets, ' + e.fromSessions + ' from closed sessions &mdash; and spent <b style="color:var(--tx)">' + e.spent + '</b>. ' +
@@ -324,17 +413,27 @@ let BID = 0;
 function startBattle(foe, ctxOpts) {
   const g = computeGame();
   const cost = ctxOpts.cost || 1;
-  if (energy(g) < cost) { toast('Not enough energy — train to recharge'); return; }
-  rpg().spent += cost; save();
   const hs = heroStats(g);
+  /* at zero health there is no fight to have, only a rest to take */
+  if (heroHP(hs) <= 0) { toast(tr('w_down')); openTavern(); return; }
+  if (energy(g) < cost) { toast(tr('w_noenergy')); return; }
+  rpg().spent += cost; save();
   B = {
-    id: ++BID, g: g, hs: hs, hp: hs.hp, max: hs.hp,
-    foe: foe, fhp: foe.hp, fmax: foe.hp,
+    id: ++BID, g: g, hs: hs, hp: heroHP(hs), max: hs.hp, vel: hs.vel,
+    foe: foe, fhp: foe.hp, fmax: foe.hp, fvel: foeVel(foe),
     ctx: ctxOpts, log: [], atkBuff: 1, defBuff: 1, charging: null,
     over: false, busy: false, turn: 1
   };
   B.log.push({ t: 'sys', m: foe.n + ' blocks your path!' });
   drawBattle();
+  /* Something much faster than you gets the opening move. Losing a turn before
+     you have taken one is the clearest lesson in what speed is for. */
+  if (B.fvel > B.vel && Math.random() < Math.min(.7, (B.fvel - B.vel) / 55)) {
+    B.busy = true;
+    B.log.push({ t: 'sys', m: tr('w_first').replace('{n}', foe.n) });
+    updateBattle();
+    setTimeout(foeTurn, 950);
+  }
 }
 /* multiplicative mitigation: defense reduces a percentage, not a flat amount.
    With flat subtraction, a high defense left every enemy dealing the 1 damage floor. */
@@ -347,21 +446,42 @@ function dmgCalc(atk, def, pow, mult, critPct) {
 }
 function heroAct(mid) {
   if (!B || B.over || B.busy) return;
-  const a = ATTACKS[mid];
-  B.busy = true;
+  const a = moveById(mid);
+  if (!a) return;
+  /* While a charge is held, any button releases it — and that release is
+     already paid for, so it costs no second use. */
   if (B.charging) {
-    const c = ATTACKS[B.charging]; B.charging = null;
+    const c = moveById(B.charging); B.charging = null;
+    B.busy = true;
     resolveHero(c, true);
-  } else if (a.kind === 'charge') {
+    return;
+  }
+  if (ppLeft(mid) <= 0) { toast(tr('w_nouses')); return; }
+  B.busy = true;
+  ppSpend(mid);
+  if (a.kind === 'charge') {
     B.charging = mid;
     B.log.push({ t: 'you', m: 'You charge ' + a.n + '... the air gets heavy.' });
     updateBattle(); setTimeout(foeTurn, 700);
     return;
-  } else resolveHero(a, false);
+  }
+  resolveHero(a, false);
 }
 function resolveHero(a, charged) {
   const atk = B.hs.atk * B.atkBuff;
   let dealt = 0, wasCrit = false, mult = 1;
+  /* Support never misses. A heal that whiffs is not tension, it is just
+     annoying, and these are the moves you earned by not skipping. */
+  if (a.pow) {
+    const ch = hitChance(moveAcc(a), B.vel, B.fvel);
+    if (Math.random() * 100 >= ch) {
+      B.log.push({ t: 'you', m: a.n + ' — ' + tr('w_you_miss') });
+      fx('foe', tr('w_miss_s'), 'miss');
+      updateBattle();
+      setTimeout(foeTurn, 760);
+      return;
+    }
+  }
   if (a.kind === 'heal') {
     const h = Math.round(B.max * a.heal / 100);
     B.hp = Math.min(B.max, B.hp + h);
@@ -378,18 +498,19 @@ function resolveHero(a, charged) {
   } else if (a.kind === 'multi') {
     const hits = 2 + Math.floor(Math.random() * 3);
     mult = typeMult(a.t, B.foe.t);
-    for (let i = 0; i < hits; i++) dealt += dmgCalc(atk, B.foe.def, a.pow, mult, B.hs.crit).d;
+    const cc = critChance(B.hs.crit, B.vel, B.fvel);
+    for (let i = 0; i < hits; i++) dealt += dmgCalc(atk, B.foe.def, a.pow, mult, cc).d;
     B.fhp -= dealt;
     B.log.push({ t: 'you', m: a.n + ' hits ' + hits + ' times for ' + dealt + '. ' + multTxt(mult) });
     fx('foe', '-' + dealt, mult > 1 ? 'super' : 'dmg');
     shake('foe');
   } else {
     mult = typeMult(a.t, B.foe.t);
-    const r = dmgCalc(atk, B.foe.def, a.pow, mult, B.hs.crit + (a.crit || 0));
+    const r = dmgCalc(atk, B.foe.def, a.pow, mult, critChance(B.hs.crit + (a.crit || 0), B.vel, B.fvel));
     dealt = r.d; wasCrit = r.crit;
     B.fhp -= dealt;
     B.log.push({ t: 'you', m: (charged ? 'ANVIL DROP! ' : '') + a.n + ' deals ' + dealt + '.' +
-      (r.crit ? ' Critical hit!' : '') + ' ' + multTxt(mult) });
+      (r.crit ? ' ' + tr('w_crit') : '') + ' ' + multTxt(mult) });
     fx('foe', '-' + dealt, r.crit ? 'crit' : (mult > 1 ? 'super' : 'dmg'));
     shake('foe');
     if (r.crit) flash();
@@ -400,7 +521,15 @@ function resolveHero(a, charged) {
 }
 function foeTurn() {
   if (!B || B.over) return;
-  const r = dmgCalc(B.foe.atk, B.hs.def * B.defBuff, 45, 1, 6);
+  /* Being faster than the thing in front of you is worth something, and this
+     is where you feel it. */
+  if (Math.random() * 100 >= hitChance(92, B.fvel, B.vel)) {
+    B.log.push({ t: 'foe', m: tr('w_foe_miss').replace('{n}', B.foe.n) });
+    fx('hero', tr('w_miss_s'), 'miss');
+    B.turn++; B.busy = false; updateBattle();
+    return;
+  }
+  const r = dmgCalc(B.foe.atk, B.hs.def * B.defBuff, 45, 1, critChance(6, B.fvel, B.vel));
   B.hp -= r.d;
   B.log.push({ t: 'foe', m: B.foe.n + ' attacks for ' + r.d + '.' + (r.crit ? ' Critical!' : '') });
   fx('hero', '-' + r.d, r.crit ? 'crit' : 'dmg');
@@ -424,6 +553,7 @@ function useItem() {
 function endBattle(win) {
   B.over = true;
   const r = rpg(), c = B.ctx;
+  r.hp = Math.max(0, B.hp);     /* health leaves the fight with you */
   if (win) {
     r.gold = (r.gold || 0) + (B.foe.gold || 0);
     r.kills[c.mobId || B.foe.n] = (r.kills[c.mobId || B.foe.n] || 0) + 1;
@@ -445,6 +575,7 @@ function endBattle(win) {
     save();
     B.result = { win: true, gold: B.foe.gold || 0, extra: extra };
   } else {
+    save();
     B.result = { win: false };
   }
   updateBattle();
@@ -472,7 +603,7 @@ function fx(who, text, cls) {
   setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 1100);
 }
 function shake(who) {
-  const el2 = document.getElementById(who === 'foe' ? 'card-foe' : 'card-hero');
+  const el2 = document.getElementById(who === 'foe' ? 'art-foe' : 'art-hero');
   if (!el2) return;
   el2.classList.remove('shake');
   void el2.offsetWidth;          /* restart the animation */
@@ -486,35 +617,39 @@ function flash() {
   setTimeout(() => ov.classList.remove('flash'), 300);
 }
 
-/* full render — builds the shell once per battle so animations survive */
+/* full render — builds the shell once per battle so animations survive.
+
+   The middle of this screen used to be a text log with a small procedural
+   badge above it, which meant the thing you were fighting was a word. Now the
+   middle is a stage with both creatures standing on it, and the log is a strip
+   underneath. Everything that moves — the bob, the shake, the floating
+   numbers — hangs off this shell, so it is built once and then only updated. */
 function drawBattle() {
   const ov = battleOverlay();
   if (!B) { ov.classList.remove('on'); ov.innerHTML = ''; drawnId = 0; return; }
   ov.classList.add('on');
   drawnId = B.id;
+  const tc = TYPES[B.foe.t].c;
   ov.innerHTML =
     '<div class="bwrap">' +
-      '<div class="bfoe" id="card-foe">' +
-        '<div class="fxlayer" id="fx-foe"></div>' +
-        '<div class="spread" style="align-items:flex-start">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:800;font-size:16px">' + esc(B.foe.n) + '</div>' +
-            '<span class="pill" style="color:' + TYPES[B.foe.t].c + ';border-color:' + TYPES[B.foe.t].c + '55">' +
-              TYPES[B.foe.t].n + '</span>' +
-          '</div>' +
-          '<div class="sigwrap">' + sigil(B.foe.n, B.foe.t, 74) + '</div>' +
+      '<div class="bstage">' +
+        '<div class="fxlayer fxf" id="fx-foe"></div>' +
+        '<div class="fxlayer fxh" id="fx-hero"></div>' +
+        '<div class="plate pfoe" id="card-foe">' +
+          '<div class="prow"><span class="pn">' + esc(B.foe.n) + '</span><span class="phv mono" id="fhp"></span></div>' +
+          '<div class="hpbar"><i id="fbar" style="background:' + tc + '"></i></div>' +
+          '<div class="pdet mono" style="color:' + tc + '">' + TYPES[B.foe.t].n.toUpperCase() +
+            ' · ' + tr('w_spd') + ' ' + B.fvel + '</div>' +
         '</div>' +
-        '<div class="hpbar"><i id="fbar" style="background:' + TYPES[B.foe.t].c + '"></i></div>' +
-        '<div class="tiny mono" id="fhp" style="margin-top:5px"></div>' +
+        '<div class="cart cfoe" id="art-foe">' + creatureArt(B.foe, 118) + '</div>' +
+        '<div class="cart chero" id="art-hero">' + heroArt(96) + '</div>' +
+        '<div class="plate phero" id="card-hero">' +
+          '<div class="prow"><span class="pn">You · Lv ' + B.g.level + '</span><span class="phv mono" id="hhp"></span></div>' +
+          '<div class="hpbar"><i id="hbar"></i></div>' +
+          '<div class="pdet mono" id="hstats"></div>' +
+        '</div>' +
       '</div>' +
       '<div class="blog" id="blog"></div>' +
-      '<div class="bhero" id="card-hero">' +
-        '<div class="fxlayer" id="fx-hero"></div>' +
-        '<div class="spread"><div style="font-weight:800">You · Lv ' + B.g.level + '</div>' +
-        '<div class="tiny mono" id="hstats"></div></div>' +
-        '<div class="hpbar"><i id="hbar"></i></div>' +
-        '<div class="tiny mono" id="hhp" style="margin-top:5px"></div>' +
-      '</div>' +
       '<div id="bactions"></div>' +
     '</div>';
   updateBattle();
@@ -533,16 +668,25 @@ function updateBattle() {
     hbar.style.background = hp > 50 ? 'var(--good)' : hp > 20 ? 'var(--warn)' : 'var(--bad)';
   }
   const fhp = document.getElementById('fhp');
-  if (fhp) fhp.textContent = Math.max(0, B.fhp) + ' / ' + B.fmax + ' HP';
+  if (fhp) fhp.textContent = Math.max(0, B.fhp) + ' / ' + B.fmax;
   const hhp = document.getElementById('hhp');
-  if (hhp) hhp.textContent = Math.max(0, B.hp) + ' / ' + B.max + ' HP';
+  if (hhp) hhp.textContent = Math.max(0, B.hp) + ' / ' + B.max;
   const hs = document.getElementById('hstats');
-  if (hs) hs.textContent = 'ATK ' + Math.round(B.hs.atk * B.atkBuff) +
-    ' · DEF ' + Math.round(B.hs.def * B.defBuff) + ' · CRIT ' + B.hs.crit + '%';
+  if (hs) {
+    hs.textContent = 'ATK ' + Math.round(B.hs.atk * B.atkBuff) +
+      ' · DEF ' + Math.round(B.hs.def * B.defBuff) + ' · ' + tr('w_spd') + ' ' + B.vel;
+    /* a buff that does not show is a buff you cannot plan around */
+    hs.style.color = (B.atkBuff > 1 || B.defBuff > 1) ? 'var(--acc)' : '';
+  }
+  /* a creature at zero health stops standing up */
+  const fa = document.getElementById('art-foe');
+  if (fa) fa.style.opacity = B.fhp <= 0 ? '.25' : '1';
+  const ha = document.getElementById('art-hero');
+  if (ha) ha.style.opacity = B.hp <= 0 ? '.25' : '1';
 
   const lg = document.getElementById('blog');
   if (lg) {
-    lg.innerHTML = B.log.slice(-8).map(l => '<div class="ll ' + l.t + '">' + esc(l.m) + '</div>').join('');
+    lg.innerHTML = B.log.slice(-6).map(l => '<div class="ll ' + l.t + '">' + esc(l.m) + '</div>').join('');
     lg.scrollTop = lg.scrollHeight;
   }
 
@@ -552,32 +696,42 @@ function updateBattle() {
   if (B.over) {
     const R = B.result;
     act.innerHTML = '<div class="bend">' + (R.win ?
-      '<div class="h-md" style="color:var(--good)">Victory</div>' +
-      '<div class="sub">+' + R.gold + ' shards' + (R.extra ? ' · <b style="color:var(--acc)">' + esc(R.extra) + '</b>' : '') + '</div>' :
-      '<div class="h-md" style="color:var(--bad)">You went down</div>' +
-      '<div class="sub">You lose nothing but the energy. Come back stronger — or better equipped.</div>') +
+      '<div class="h-md" style="color:var(--good)">' + tr('w_victory') + '</div>' +
+      '<div class="sub">+' + R.gold + ' ' + tr('w_shards') + (R.extra ? ' · <b style="color:var(--acc)">' + esc(R.extra) + '</b>' : '') + '</div>' :
+      '<div class="h-md" style="color:var(--bad)">' + tr('w_defeat') + '</div>' +
+      '<div class="sub">' + tr('w_lost_hp') + '</div>') +
       '<div class="row" style="margin-top:12px">' +
-      (R.win && B.ctx.repeat ? '<button class="btn p" id="bagain">Fight again</button>' : '') +
-      '<button class="btn' + (R.win && B.ctx.repeat ? ' gh' : ' p') + '" id="bclose">Leave</button></div></div>';
+      (R.win && B.ctx.repeat ? '<button class="btn p" id="bagain">' + tr('w_again') + '</button>' : '') +
+      '<button class="btn' + (R.win && B.ctx.repeat ? ' gh' : ' p') + '" id="bclose">' + tr('w_leave') + '</button></div></div>';
   } else {
-    const mv = activeMoves(B.g);
-    act.innerHTML = '<div class="bmoves">' + mv.map(id => {
-      const a = ATTACKS[id];
+    /* every move empty leaves you your bare hands, so a fight is never a
+       dead end — only a bad one */
+    const dry = ppDry(B.g);
+    const mv = dry ? ['bare'] : activeMoves(B.g);
+    act.innerHTML = (dry ? '<div class="note w" style="margin-bottom:8px">' + tr('w_bare_d') + '</div>' : '') +
+    '<div class="bmoves">' + mv.map(id => {
+      const a = moveById(id);
       const m = a.pow ? typeMult(a.t, B.foe.t) : 1;
       const tag = a.pow ? (m > 1 ? '<span class="eff up2">×2</span>' : m < 1 ? '<span class="eff dn">×½</span>' : '') : '';
-      return '<button class="mv" data-mv="' + id + '"' + (B.busy ? ' disabled' : '') + '>' +
-        '<span class="mvn">' + esc(a.n) + ' ' + tag + '</span>' +
-        '<span class="mvt" style="color:' + TYPES[a.t].c + '">' + TYPES[a.t].n + (a.pow ? ' · ' + a.pow : ' · support') + '</span></button>';
+      const left = ppLeft(id), max = movePP(id), out = left <= 0;
+      const ppTxt = id === 'bare' ? '∞' : left + '/' + max;
+      return '<button class="mv' + (out ? ' out' : '') + '" data-mv="' + id + '"' + (B.busy || out ? ' disabled' : '') + '>' +
+        '<span class="spread"><span class="mvn">' + esc(id === 'bare' ? tr('w_bare') : a.n) + ' ' + tag + '</span>' +
+        '<span class="pp' + (!out && left <= 2 && id !== 'bare' ? ' low' : '') + '">' + ppTxt + '</span></span>' +
+        '<span class="mvt" style="color:' + TYPES[a.t].c + '">' + TYPES[a.t].n +
+        (a.pow ? ' · ' + a.pow + ' · ' + moveAcc(a) + '%' : ' · ' + tr('w_support')) + '</span></button>';
     }).join('') + '</div>' +
     '<div class="row" style="margin-top:8px">' +
-    '<button class="btn sm" id="bitem"' + (B.busy || !r.items.shake ? ' disabled' : '') + '>Shake (' + (r.items.shake || 0) + ')</button>' +
-    '<button class="btn sm gh" id="bflee">Flee</button>' +
-    '<span class="tiny mono" style="margin-left:auto">Turn ' + B.turn + '</span></div>';
+    '<button class="btn sm" id="bitem"' + (B.busy || !r.items.shake ? ' disabled' : '') + '>' + tr('w_shake') + ' (' + (r.items.shake || 0) + ')</button>' +
+    '<button class="btn sm gh" id="bflee">' + tr('w_flee') + '</button>' +
+    '<span class="tiny mono" style="margin-left:auto">' + tr('w_turn') + ' ' + B.turn + '</span></div>';
   }
 
   $$('#battle [data-mv]').forEach(b => b.onclick = () => heroAct(b.dataset.mv));
   const bi = document.getElementById('bitem'); if (bi) bi.onclick = useItem;
-  const bf = document.getElementById('bflee'); if (bf) bf.onclick = () => { B = null; drawBattle(); rQuest(); };
+  /* running away still costs you the health you already lost */
+  const bf = document.getElementById('bflee');
+  if (bf) bf.onclick = () => { rpg().hp = Math.max(0, B.hp); save(); B = null; drawBattle(); rQuest(); };
   const bc = document.getElementById('bclose'); if (bc) bc.onclick = () => { const c = B.ctx; B = null; drawBattle(); afterBattle(c); };
   const ba = document.getElementById('bagain'); if (ba) ba.onclick = () => { const c = B.ctx; B = null; drawBattle(); startBattle(Object.assign({}, MOBS[c.mobId]), c); };
 }
@@ -596,12 +750,33 @@ function afterBattle(c) {
       '#battle.on{display:flex}' +
       '#battle.flash::after{content:"";position:absolute;inset:0;background:#fff;opacity:.16;pointer-events:none;animation:critf .3s ease-out}' +
       '@keyframes critf{from{opacity:.3}to{opacity:0}}' +
-      '.bwrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:11px}' +
-      '.bfoe,.bhero{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px;position:relative}' +
-      '.fxlayer{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:5}' +
+      '.bwrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:10px}' +
+      /* the stage: both creatures on one floor, nameplates in opposite corners */
+      '.bstage{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;' +
+      'height:clamp(176px,27vh,228px);background:radial-gradient(120% 80% at 50% 108%,rgba(200,255,0,.07),transparent 60%),' +
+      'linear-gradient(180deg,#0B0F15,#12161F)}' +
+      '.bstage::after{content:"";position:absolute;left:0;right:0;bottom:30%;height:1px;background:var(--line)}' +
+      /* the two creatures occupy opposite bands of the stage, and the plates
+         sit in the two corners neither of them uses */
+      '.cart{position:absolute;z-index:2;animation:bob 3.6s ease-in-out infinite;transition:opacity .5s}' +
+      '.cart.cfoe{right:3%;bottom:35%}' +
+      '.cart.chero{left:3%;bottom:2%;animation-delay:-1.8s}' +
+      '@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}' +
+      '.plate{position:absolute;z-index:3;width:min(55%,205px);background:rgba(10,13,18,.86);' +
+      'border:1px solid var(--line);border-radius:11px;padding:7px 9px;backdrop-filter:blur(3px)}' +
+      '.plate.pfoe{left:7px;top:7px}.plate.phero{right:7px;bottom:7px}' +
+      '.plate .prow{display:flex;align-items:baseline;gap:7px;margin-bottom:5px}' +
+      '.plate .pn{font-weight:800;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}' +
+      '.plate .phv{font-size:10.5px;color:var(--dim);flex:0 0 auto}' +
+      '.plate .pdet{font-size:9.5px;letter-spacing:.07em;color:var(--dim);margin-top:5px;' +
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.plate .hpbar{margin-top:0;height:9px}' +
+      '.fxlayer{position:absolute;pointer-events:none;overflow:visible;z-index:6;width:50%;height:62%}' +
+      '.fxlayer.fxf{right:0;top:4%}.fxlayer.fxh{left:0;bottom:4%}' +
       '.fxnum{position:absolute;top:12px;font-family:var(--mono);font-weight:800;font-size:22px;' +
       'text-shadow:0 2px 8px rgba(0,0,0,.9);animation:fxup 1.1s cubic-bezier(.2,.8,.3,1) forwards;white-space:nowrap}' +
       '.fxnum.dmg{color:#FF8A7D}.fxnum.crit{color:#FFD23D;font-size:28px}' +
+      '.fxnum.miss{color:#9FB3C8;font-size:17px;letter-spacing:.08em}' +
       '.fxnum.super{color:#C8FF00;font-size:26px}.fxnum.heal{color:#38DC84}.fxnum.buff{color:#00D6FF;font-size:18px}' +
       '@keyframes fxup{0%{transform:translateY(6px) scale(.7);opacity:0}' +
       '18%{transform:translateY(-4px) scale(1.15);opacity:1}100%{transform:translateY(-42px) scale(1);opacity:0}}' +
@@ -612,8 +787,8 @@ function afterBattle(c) {
       '@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}' +
       '.hpbar{height:11px;border-radius:99px;background:#0A0C10;overflow:hidden;margin-top:9px;border:1px solid var(--line)}' +
       '.hpbar>i{display:block;height:100%;width:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1),background .3s}' +
-      '.blog{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;' +
-      'height:132px;overflow-y:auto;font-size:13px;line-height:1.55}' +
+      '.blog{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;' +
+      'height:clamp(62px,11vh,96px);overflow-y:auto;font-size:12.5px;line-height:1.5}' +
       '.ll{margin-bottom:4px;animation:llin .25s ease}' +
       '@keyframes llin{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}' +
       '.ll.you{color:var(--acc)}.ll.foe{color:#FF8A7D}.ll.sys{color:var(--dim);font-style:italic}' +
@@ -623,7 +798,15 @@ function afterBattle(c) {
       '.mv:hover:not(:disabled){border-color:var(--acc);background:#1D222A;transform:translateY(-1px)}' +
       '.mv:active:not(:disabled){transform:translateY(1px)}' +
       '.mv:disabled{opacity:.4;cursor:not-allowed}' +
+      '.mv.out{opacity:.32;border-style:dashed}' +
       '.mvn{font-weight:800;font-size:13px}.mvt{font-family:var(--mono);font-size:10px;letter-spacing:.06em}' +
+      /* uses left, in the corner of every move, because it is the number you
+         are actually budgeting */
+      '.pp{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--dim);flex:0 0 auto;margin-left:6px}' +
+      '.pp.low{color:var(--warn)}' +
+      '.ppbar{display:flex;gap:3px;margin-top:5px}' +
+      '.ppbar i{flex:1;height:4px;border-radius:99px;background:var(--acc)}' +
+      '.ppbar i.off{background:var(--line)}' +
       '.eff{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:99px;margin-left:3px}' +
       '.eff.up2{background:rgba(56,220,132,.2);color:var(--good)}' +
       '.eff.dn{background:rgba(255,74,61,.18);color:var(--bad)}' +
@@ -699,10 +882,17 @@ function mapHTML(g) {
 
   h += energyCard(g);
 
+  const hp = heroHP(hs), dry = ppDry(g), hurt = hp < hs.hp;
   h += '<div class="card"><div class="sec-t">Your battle stats</div>' +
     '<div class="grid g4">' +
-    st(hs.hp, 'HP') + st(hs.atk, 'Attack') + st(hs.def, 'Defense') + st(hs.crit + '%', 'Crit') + '</div>' +
+    st(hp + '<span style="font-size:.6em;color:var(--dim)">/' + hs.hp + '</span>', tr('w_hp')) +
+    st(hs.atk, 'Attack') + st(hs.def, 'Defense') + st(hs.vel, tr('w_spd')) + '</div>' +
+    '<div class="tiny mono" style="margin-top:10px">CRIT ' + hs.crit + '%</div>' +
+    '<p class="tiny" style="margin-top:8px">' + tr('w_agility') + '</p>' +
+    ((hurt || dry) ? '<div class="note w" style="margin-top:11px">' +
+      (hp <= 0 ? tr('w_down') : (dry ? tr('w_bare_d') : tr('w_wounded') + ' — ' + tr('w_tavern_sub'))) + '</div>' : '') +
     '<div class="row wrap" style="margin-top:14px">' +
+    '<button class="btn sm' + (hurt || dry ? ' p' : '') + '" id="wtav">' + tr('w_tavern') + '</button>' +
     '<button class="btn sm" id="wequip">Gear</button>' +
     '<button class="btn sm" id="wshop">Shop</button>' +
     '<button class="btn sm" id="wmoves">Attacks</button></div></div>';
@@ -780,6 +970,7 @@ function wireMap(g) {
   });
   $$('[data-dung]').forEach(n => n.onclick = () => openDungeon(n.dataset.dung));
   const t = $('#tutok'); if (t) t.onclick = () => { rpg().tut = true; save(); rQuest(); };
+  const tv = $('#wtav'); if (tv) tv.onclick = openTavern;
   const e = $('#wequip'); if (e) e.onclick = openEquip;
   const s = $('#wshop'); if (s) s.onclick = openShop;
   const m = $('#wmoves'); if (m) m.onclick = openMoves;
@@ -819,6 +1010,60 @@ function openDungeon(id) {
   $('#xgo').onclick = () => {
     closeModal();
     startBattle(Object.assign({}, MOBS[mid]), { mobId: mid, dungeon: id, floor: floor, cost: 2 });
+  };
+}
+
+/* ---------------- the tavern ----------------
+   The one place that gives anything back. One energy buys a full night: all
+   your health, and every attack back to its full number of uses. It is free
+   once after each session you close, because the thing this whole app is for
+   is the thing that should also be the thing that heals you. */
+function tavernState(g) {
+  const hs = heroStats(g), r = rpg();
+  const moves = activeMoves(g);
+  return {
+    hs: hs, hp: heroHP(hs), max: hs.hp, moves: moves,
+    free: restFree(g), energy: energy(g),
+    full: heroHP(hs) >= hs.hp && moves.every(id => ppLeft(id) >= movePP(id))
+  };
+}
+function openTavern() {
+  const g = computeGame(), t = tavernState(g);
+  const pct = clamp(t.hp / t.max * 100, 0, 100);
+  const can = t.full ? false : (t.free || t.energy >= 1);
+  let h = '<div class="spread" style="margin-bottom:10px"><div class="h-md">' + tr('w_tavern_n') + '</div>' +
+    '<button class="btn sm gh" id="xclose">×</button></div>' +
+    '<div style="display:flex;justify-content:center;margin:2px 0 10px">' + tavernArt(96) + '</div>' +
+    '<p class="sub" style="margin-bottom:14px">' + tr('w_tavern_d') + '</p>' +
+    '<div class="sec-t">' + tr('w_your_hp') + '</div>' +
+    '<div class="hpbar" style="margin-bottom:6px"><i style="width:' + pct + '%;background:' +
+      (pct > 50 ? 'var(--good)' : pct > 20 ? 'var(--warn)' : 'var(--bad)') + '"></i></div>' +
+    '<div class="tiny mono" style="margin-bottom:16px">' + t.hp + ' / ' + t.max + ' ' + tr('w_hp') + '</div>' +
+    '<div class="sec-t">' + tr('w_uses') + '</div>';
+  t.moves.forEach(id => {
+    const a = ATTACKS[id]; if (!a) return;
+    const left = ppLeft(id), max = movePP(id);
+    let bars = '';
+    for (let i = 0; i < max; i++) bars += '<i class="' + (i < left ? '' : 'off') + '"></i>';
+    h += '<div style="margin-bottom:11px"><div class="spread">' +
+      '<span style="font-size:13.5px;font-weight:700">' + esc(a.n) + '</span>' +
+      '<span class="mono tiny' + (left === 0 ? '" style="color:var(--bad)' : (left <= 2 ? '" style="color:var(--warn)' : '')) + '">' +
+        left + ' / ' + max + '</span></div>' +
+      '<div class="ppbar">' + bars + '</div></div>';
+  });
+  h += '<div class="note' + (t.free ? '' : ' w') + '" style="margin:14px 0 12px">' +
+    (t.full ? tr('w_already_full') : (t.free ? tr('w_rest_why') : tr('w_tavern_sub_cost'))) + '</div>' +
+    '<button class="btn p w" id="xrest"' + (can ? '' : ' disabled') + '>' +
+      (t.free ? tr('w_rest_free') : tr('w_rest_cost')) + '</button>';
+  modal(h);
+  $('#xclose').onclick = closeModal;
+  const rb = $('#xrest');
+  if (rb) rb.onclick = () => {
+    const g2 = computeGame();
+    if (tavernState(g2).full) return;
+    doRest(g2);
+    toast(tr('w_rested'));
+    closeModal(); rQuest();
   };
 }
 
@@ -890,13 +1135,16 @@ function openMoves() {
   let h = '<div class="spread" style="margin-bottom:6px"><div class="h-md">Attacks</div>' +
     '<button class="btn sm gh" id="xclose">Close</button></div>' +
     '<p class="sub" style="margin-bottom:10px">You take up to 4 into battle. Tap to add or remove.</p>' +
+    '<div class="note" style="margin-bottom:10px">' + tr('w_moves_pp') + '</div>' +
     '<div class="note" style="margin-bottom:14px"><b>Type cycle:</b> Iron → Beast → Stone → Shadow → Spirit → Iron.<br>' +
     'Each type does <b>double</b> damage to the next one and <b>half</b> to the previous one. In battle the app marks the good picks with ×2.</div>';
   Object.keys(ATTACKS).forEach(id => {
     const a = ATTACKS[id], ok = un.indexOf(id) >= 0, on = act.indexOf(id) >= 0;
     h += '<div class="node' + (ok ? (on ? ' dung' : '') : ' lock') + '"' + (ok ? ' data-mv2="' + id + '"' : '') + '>' +
       '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14px">' + (ok ? esc(a.n) : '???') + '</div>' +
-      '<div class="tiny mono" style="color:' + TYPES[a.t].c + '">' + TYPES[a.t].n + (a.pow ? ' · power ' + a.pow : ' · support') + '</div>' +
+      '<div class="tiny mono" style="color:' + TYPES[a.t].c + '">' + TYPES[a.t].n +
+        (a.pow ? ' · ' + tr('w_power') + ' ' + a.pow + ' · ' + moveAcc(a) + '%' : ' · ' + tr('w_support')) +
+        ' · ' + movePP(id) + ' ' + tr('w_uses') + (ok ? ' (' + ppLeft(id) + ' ' + tr('w_left') + ')' : '') + '</div>' +
       '<div class="tiny" style="margin-top:3px">' + (ok ? esc(a.d) : 'Locked — ' + esc(a.ut)) + '</div></div>' +
       '<span class="pill ' + (on ? 'up' : ok ? 'good' : '') + '">' + (on ? 'equipped' : ok ? 'ready' : 'locked') + '</span></div>';
   });

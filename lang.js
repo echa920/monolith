@@ -40,6 +40,17 @@ function deepApply(dst, src) {
   });
 }
 
+/* Structures defined in files that load after this one register themselves.
+   The snapshot goes through JSON, which drops functions — harmless, because
+   deepApply only ever writes the keys a translation actually carries, so an
+   attack's unlock rule and a dungeon's condition are never touched. */
+function i18nLate(name, obj) {
+  if (!obj || I18N_TARGETS[name]) return;
+  I18N_TARGETS[name] = obj;
+  EN_SNAP[name] = JSON.parse(JSON.stringify(obj));
+  if (LANG === 'es' && ES[name]) deepApply(obj, ES[name]);
+}
+
 function applyLang(l) {
   LANG = (l === 'es') ? 'es' : 'en';
   /* always reset to English first, so switching back is exact */
@@ -56,14 +67,60 @@ const UI = {
     tab_today: 'Today', tab_quest: 'Quest', tab_photos: 'Photos', tab_symmetry: 'Symmetry',
     tab_measure: 'Measure', tab_progress: 'Progress', tab_plan: 'Plan', tab_guide: 'Guide',
     tab_coach: 'AI',
-    week: 'Week', cycle: 'Cycle', week_s: 'W'
+    week: 'Week', cycle: 'Cycle', week_s: 'W',
+
+    /* ---- the forge: battles, moves, the tavern ---- */
+    w_turn: 'Turn', w_flee: 'Flee', w_support: 'support', w_power: 'power',
+    w_uses: 'uses', w_nouses: 'out of uses', w_spd: 'SPD', w_hp: 'HP',
+    w_bare: 'Bare Hands',
+    w_bare_d: 'Every attack is out of uses. This is what is left: it hurts almost nothing and it never runs out.',
+    w_you_miss: 'You missed.', w_foe_miss: '{n} swings and misses.', w_miss_s: 'MISS',
+    w_noenergy: 'No energy left — train to recharge it',
+    w_crit: 'Critical hit!', w_first: '{n} is faster than you and moves first!',
+    w_shake: 'Shake', w_victory: 'Victory', w_defeat: 'You went down',
+    w_again: 'Fight again', w_leave: 'Leave', w_shards: 'shards',
+    w_lost_hp: 'You keep your shards and your gear. What you lost is health — rest at the tavern.',
+    w_tavern: 'Tavern', w_tavern_n: 'The Tavern',
+    w_tavern_d: 'Somewhere warm between fights. One energy buys a full night: all your health back, and every attack back to its full number of uses.',
+    w_rest: 'Rest', w_rest_free: 'Rest — free', w_rest_cost: 'Rest — 1 energy',
+    w_rested: 'Full health, and every attack back to full uses.',
+    w_rest_why: 'Free this time: you closed a session since your last rest. Training is rest.',
+    w_already_full: 'You are already at full health with every attack full.',
+    w_down: 'You are at 0 health. Rest at the tavern before you fight again.',
+    w_ledger_rest: 'Rest at the tavern', w_wounded: 'Wounded', w_your_hp: 'Your health',
+    w_left: 'left', w_tavern_sub: 'a night at the tavern puts it all back', w_tavern_sub_cost: 'One energy. That is one creature you do not fight today — spend it anyway if you are hurt.',
+    w_moves_pp: 'Each attack has a number of uses. The harder it hits, the fewer you get — and they only come back at the tavern.',
+    w_agility: 'Speed decides who lands and who misses. Faster than the thing in front of you and it swings at air; slower and it moves first.'
   },
   es: {
     lang_btn: 'EN', lang_title: 'Switch to English',
     tab_today: 'Hoy', tab_quest: 'Aventura', tab_photos: 'Fotos', tab_symmetry: 'Simetría',
     tab_measure: 'Medidas', tab_progress: 'Progreso', tab_plan: 'Plan', tab_guide: 'Guía',
     tab_coach: 'AI',
-    week: 'Semana', cycle: 'Ciclo', week_s: 'S'
+    week: 'Semana', cycle: 'Ciclo', week_s: 'S',
+
+    /* ---- la forja: combates, golpes, taberna ---- */
+    w_turn: 'Turno', w_flee: 'Huir', w_support: 'apoyo', w_power: 'poder',
+    w_uses: 'usos', w_nouses: 'sin usos', w_spd: 'VEL', w_hp: 'VIDA',
+    w_bare: 'Manos desnudas',
+    w_bare_d: 'Todos tus golpes se quedaron sin usos. Esto es lo que queda: casi no hace daño y nunca se acaba.',
+    w_you_miss: 'Fallaste.', w_foe_miss: '{n} ataca y falla.', w_miss_s: 'FALLO',
+    w_noenergy: 'No te queda energía — entrena para recargarla',
+    w_crit: '¡Golpe crítico!', w_first: '¡{n} es más rápido que tú y golpea primero!',
+    w_shake: 'Batido', w_victory: 'Victoria', w_defeat: 'Caíste',
+    w_again: 'Pelear otra vez', w_leave: 'Salir', w_shards: 'fragmentos',
+    w_lost_hp: 'No pierdes fragmentos ni equipo. Lo que perdiste es vida — descansa en la taberna.',
+    w_tavern: 'Taberna', w_tavern_n: 'La Taberna',
+    w_tavern_d: 'Un sitio con fuego entre pelea y pelea. Una energía paga la noche entera: recuperas toda la vida y cada golpe vuelve a tener todos sus usos.',
+    w_rest: 'Descansar', w_rest_free: 'Descansar — gratis', w_rest_cost: 'Descansar — 1 energía',
+    w_rested: 'Vida llena, y todos los golpes con sus usos otra vez.',
+    w_rest_why: 'Gratis esta vez: cerraste una sesión desde tu último descanso. Entrenar es descansar.',
+    w_already_full: 'Ya estás con la vida llena y todos los golpes llenos.',
+    w_down: 'Estás en 0 de vida. Descansa en la taberna antes de volver a pelear.',
+    w_ledger_rest: 'Descansar en la taberna', w_wounded: 'Herido', w_your_hp: 'Tu vida',
+    w_left: 'quedan', w_tavern_sub: 'una noche en la taberna lo devuelve todo', w_tavern_sub_cost: 'Una energía. Es una criatura que hoy no peleas — gástala igual si estás herido.',
+    w_moves_pp: 'Cada golpe tiene un número de usos. Mientras más fuerte pega, menos usos tiene — y solo vuelven en la taberna.',
+    w_agility: 'La velocidad decide quién acierta y quién falla. Si eres más rápido que lo que tienes enfrente, ataca al aire; si eres más lento, se mueve primero.'
   }
 };
 /* named tr: app.js already uses both t (locals) and T (the rest timer). */
@@ -1169,6 +1226,86 @@ GUIDE: [
       '<p><b>Siempre:</b> usa los seguros del rack, no hagas banca pesada sin alguien cerca, y no dudes en pedirle a un monitor que te mire una serie. Nadie se va a reír; todo el mundo empezó igual.</p>' +
       '<p>Esta app es una herramienta de organización y seguimiento, no un sustituto de un entrenador presencial ni de consejo médico. Si tienes alguna condición de salud o una lesión, consúltalo antes.</p>' }
 ]
+,
 
+/* ======================================================================
+   LA FORJA — lo que ves dentro de una pelea
+   Los nombres propios de las criaturas se quedan como están: un nombre es un
+   nombre. Lo que se traduce es todo lo que tienes que entender para decidir.
+   ====================================================================== */
+
+TYPES: {
+  iron:   { n: 'Hierro' },
+  beast:  { n: 'Bestia' },
+  stone:  { n: 'Piedra' },
+  shadow: { n: 'Sombra' },
+  spirit: { n: 'Espíritu' }
+},
+
+ATTACKS: {
+  bench_strike: { n: 'Golpe de Banca',
+    d: 'Un empuje corto y plano. El primer golpe que aprende cualquier aprendiz, y el único que nunca se acaba.',
+    ut: 'Disponible desde el principio' },
+  lat_pull: { n: 'Arrastre Dorsal',
+    d: 'Arrastras al enemigo hacia ti con los codos, no con las manos.',
+    ut: 'Jalón al pecho: 35 kg × 8' },
+  hinge: { n: 'Bisagra de Hierro',
+    d: 'La cadera se dispara hacia delante como un cerrojo. Nada vistoso, demoledor.',
+    ut: 'Peso muerto rumano: 20 kg × 10' },
+  side_edge: { n: 'Filo Lateral',
+    d: 'Dos cortes limpios saliendo de los hombros. Acierta mucho y es crítico mucho.',
+    ut: 'Elevación lateral: 6 kg × 12' },
+  quake: { n: 'Prensa Sísmica',
+    d: 'Empujas el suelo hasta que el suelo cede.',
+    ut: 'Prensa de piernas: 100 kg × 10' },
+  ham_claw: { n: 'Garra Isquiotibial',
+    d: 'Un tijerazo por detrás. Nadie ve venir a los isquios.',
+    ut: 'Curl femoral: 25 kg × 10' },
+  hammer: { n: 'Martillo Neutro',
+    d: 'Agarre de martillo, impacto de martillo.',
+    ut: 'Curl martillo inclinado: 8 kg × 10' },
+  rep_chain: { n: 'Cadena de Repeticiones',
+    d: 'Golpea de 2 a 4 veces. El volumen también es daño.',
+    ut: '10 sesiones cerradas' },
+  titan_push: { n: 'Empuje de Titán',
+    d: 'Tres cuartos de tu peso corporal convertidos en un solo empujón. Tan lento que algo rápido puede salirse.',
+    ut: 'Press de banca: 0,75 × tu peso × 8' },
+  resolve: { n: 'Voluntad Intacta',
+    d: 'Recuperas el 45% de tu vida. Cuatro veces entre descansos — no se gana peleando, se gana no faltando.',
+    ut: 'Racha de 6 sesiones' },
+  roar: { n: 'Rugido de la Forja',
+    d: 'Sube tu Ataque un 35% para el resto de la pelea.',
+    ut: '15 sesiones cerradas' },
+  stance: { n: 'Postura de Acero',
+    d: 'Sube tu Defensa un 45% para el resto de la pelea. La técnica es armadura.',
+    ut: 'Lista de después de entrenar completa en 5 sesiones' },
+  mirror: { n: 'Corte Espejo',
+    d: 'Solo lo domina alguien que de verdad se mide a sí mismo.',
+    ut: 'Analiza 3 fotos en Simetría' },
+  anvil_drop: { n: 'Caída del Yunque',
+    d: 'Carga un turno y cae al siguiente. Devastador si aguantas el golpe — y falla más que cualquier otra cosa que tengas.',
+    ut: 'Press de banca: tu peso corporal × 8' },
+  judgement: { n: 'Juicio de la Forja',
+    d: 'El golpe que solo tiene alguien que cambió de verdad.',
+    ut: 'Nivel de aventurero 20' }
+},
+
+ITEMS: {
+  rusty_bar:  { n: 'Barra Oxidada',        d: 'Más pesada de lo que debería. Funciona.' },
+  oly_bar:    { n: 'Barra Olímpica',       d: '20 kg de acero honesto.' },
+  anvil:      { n: 'Yunque Portátil',      d: 'Nadie sabe cómo lo cargas. Tú tampoco.' },
+  forge_ham:  { n: 'Martillo de Forja',    d: 'Con esto se hicieron los primeros discos.' },
+  wraps:      { n: 'Muñequeras Gastadas',  d: 'Te protege las muñecas y poco más.' },
+  belt:       { n: 'Cinturón de Cuero',    d: 'Le enseña a tu tronco a mantenerse rígido.' },
+  plate_mail: { n: 'Arnés de Discos',      d: 'Discos de veinte kilos cosidos entre sí.' },
+  aegis:      { n: 'Égida del Constante',  d: 'Se endurece con cada sesión que no te saltaste.' },
+  timer:      { n: 'Cronómetro Roto',      d: 'Siempre marca 90 segundos. Es todo lo que necesitas.' },
+  eye:        { n: 'Ojo del Forjador',     d: 'Ve la asimetría antes que el espejo.' },
+  amulet:     { n: 'Amuleto de Proteína',  d: 'Tibio al tacto. Huele levemente a vainilla.' },
+  hourglass:  { n: 'Reloj Invertido',      d: 'Por una vez, el tiempo trabaja para ti.' },
+  shake:      { n: 'Batido de Proteína',   d: 'Recupera el 45% de tu vida en plena pelea.' }
+},
+
+SLOT_NAMES: { weapon: 'Arma', armor: 'Armadura', charm: 'Amuleto' }
 
 };
